@@ -1,0 +1,69 @@
+.create-point-container {
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.create-point-card {
+  max-width: 700px;
+  margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.create-point-card h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.create-point-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.create-point-form .btn {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.create-point-form .btn-primary {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.create-point-form .btn-primary:hover {
+  background-color: #357abd;
+}
+
+.create-point-form .btn-primary:disabled {
+  background-color: #a8c5e8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.create-point-form select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+}
+
+.create-point-form select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
