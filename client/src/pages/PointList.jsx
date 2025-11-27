@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { CATEGORIES } from '../constants/categories';
 import './PointList.css';
 
@@ -8,15 +10,26 @@ const PointList = () => {
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { user } = useAuth();
+  const { effectiveLanguages } = useLanguage();
 
   useEffect(() => {
     fetchPoints();
-  }, []);
+  }, [effectiveLanguages]);
 
   const fetchPoints = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/points');
+      
+      // Map Rangers and Admins see all languages
+      const isMapRangerOrAdmin = user?.role === 'mapRanger' || user?.role === 'admin';
+      const languages = isMapRangerOrAdmin ? ['he', 'en'] : effectiveLanguages();
+      
+      const response = await axiosInstance.get('/points', {
+        params: {
+          languages: languages.join(',')
+        }
+      });
       setPoints(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch points');

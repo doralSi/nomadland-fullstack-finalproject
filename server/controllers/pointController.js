@@ -3,7 +3,7 @@ import Point from '../models/Point.js';
 // Create a new point
 export const createPoint = async (req, res) => {
   try {
-    const { title, description, category, lat, lng, images } = req.body;
+    const { title, description, category, lat, lng, images, language } = req.body;
 
     // Validate required fields
     if (!title || lat === undefined || lng === undefined) {
@@ -19,6 +19,7 @@ export const createPoint = async (req, res) => {
       lat,
       lng,
       images: images || [],
+      language: language || 'he',
       createdBy: req.user.id
     });
 
@@ -35,7 +36,24 @@ export const createPoint = async (req, res) => {
 // Get all points
 export const getPoints = async (req, res) => {
   try {
-    const points = await Point.find()
+    const { languages } = req.query;
+    
+    // Build filter query
+    let filter = {};
+    
+    // Language filtering
+    // Map Rangers and Admins see all languages (handled by client)
+    // Regular users: Hebrew mode shows he+en, English mode shows en only
+    if (languages) {
+      const langArray = languages.split(',').map(l => l.trim());
+      if (langArray.length === 1) {
+        filter.language = langArray[0];
+      } else if (langArray.length > 1) {
+        filter.language = { $in: langArray };
+      }
+    }
+    
+    const points = await Point.find(filter)
       .populate('createdBy', 'username email')
       .sort({ createdAt: -1 });
 

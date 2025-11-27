@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axiosInstance from '../api/axiosInstance';
 
 const RegionContext = createContext();
@@ -36,11 +36,11 @@ export const RegionProvider = ({ children }) => {
     }
   };
 
-  const selectRegion = (region) => {
+  const selectRegion = useCallback((region) => {
     setCurrentRegion(region);
-  };
+  }, []);
 
-  const selectRegionBySlug = async (slug) => {
+  const selectRegionBySlug = useCallback(async (slug) => {
     try {
       const response = await axiosInstance.get(`/regions/${slug}`);
       setCurrentRegion(response.data);
@@ -49,11 +49,11 @@ export const RegionProvider = ({ children }) => {
       console.error('Error fetching region by slug:', err);
       throw err;
     }
-  };
+  }, []);
 
-  const clearRegion = () => {
+  const clearRegion = useCallback(() => {
     setCurrentRegion(null);
-  };
+  }, []);
 
   const value = {
     regions,

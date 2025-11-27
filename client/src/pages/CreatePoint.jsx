@@ -20,7 +20,8 @@ const CreatePoint = () => {
     category: 'trail',
     lat: '',
     lng: '',
-    imageUrl: ''
+    imageUrl: '',
+    language: 'he'
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -179,7 +180,7 @@ const CreatePoint = () => {
         lat: parseFloat(form.lat),
         lng: parseFloat(form.lng),
         images: finalImageUrl ? [finalImageUrl] : [],
-        language: 'he',
+        language: form.language,
         region: 'default'
       };
 
@@ -290,6 +291,25 @@ const CreatePoint = () => {
                     {cat.label}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Language */}
+            <div>
+              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
+                Language *
+              </label>
+              <select
+                id="language"
+                name="language"
+                value={form.language}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              >
+                <option value="he">עברית (Hebrew)</option>
+                <option value="en">English</option>
               </select>
             </div>
 

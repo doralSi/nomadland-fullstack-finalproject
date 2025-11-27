@@ -14,13 +14,34 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: true,
+    required: function() {
+      // Password is required only if no googleId
+      return !this.googleId;
+    },
   },
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["user", "mapRanger", "admin"],
     default: "user",
   },
+  avatar: {
+    type: String,
+    default: "",
+  },
+  googleId: {
+    type: String,
+    sparse: true,
+    unique: true,
+  },
+  homeRegion: {
+    type: String,
+    default: "",
+  },
 });
+
+// Helper method to check if user is mapRanger or admin
+userSchema.methods.isMapRangerOrAdmin = function() {
+  return this.role === "mapRanger" || this.role === "admin";
+};
 
 export default mongoose.model("User", userSchema);

@@ -65,6 +65,22 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   };
 
+  const googleLogin = async (credential) => {
+    try {
+      setError(null);
+      const response = await axiosInstance.post('/auth/google', { credential });
+      const { token, user: userData } = response.data;
+      
+      saveToken(token);
+      setUser(userData);
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Google login failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -72,6 +88,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    googleLogin,
     isAuthenticated: !!user
   };
 

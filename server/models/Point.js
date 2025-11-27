@@ -27,6 +27,33 @@ const pointSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  language: {
+    type: String,
+    enum: ['he', 'en'],
+    required: true,
+    default: 'he'
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  averageRating: {
+    type: Number,
+    default: null
+  },
+  averagePriceLevel: {
+    type: Number,
+    default: null
+  },
+  averageAccessibilityArrival: {
+    type: Number,
+    default: null
+  },
+  averageAccessibilityDisability: {
+    type: Number,
+    default: null
   }
 }, {
   timestamps: true

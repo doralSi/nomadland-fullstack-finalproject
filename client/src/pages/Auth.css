@@ -77,6 +77,42 @@
   transform: none;
 }
 
+.auth-divider {
+  margin: 1.5rem 0 1rem;
+  text-align: center;
+  position: relative;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ddd;
+  z-index: 0;
+}
+
+.auth-divider span {
+  background-color: white;
+  padding: 0 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 1;
+}
+
+.google-login-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.google-login-wrapper > div {
+  width: 100%;
+}
+
 .auth-switch {
   text-align: center;
   margin-top: 1.5rem;

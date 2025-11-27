@@ -1,0 +1,202 @@
+.edit-point-location {
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
+  background: #f5f7fa;
+}
+
+.edit-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.edit-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.5rem;
+}
+
+.edit-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.success-message {
+  max-width: 800px;
+  margin: 0 auto 1rem;
+  padding: 1rem;
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.error-message {
+  max-width: 800px;
+  margin: 0 auto 1rem;
+  padding: 1rem;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.point-info {
+  max-width: 800px;
+  margin: 0 auto 1.5rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.point-info h2 {
+  margin: 0 0 1rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.point-info p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.point-info strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.map-container {
+  max-width: 800px;
+  margin: 0 auto 1.5rem;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-leaflet-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.edit-actions {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-back {
+  background: #667eea;
+  color: white;
+  margin-top: 1rem;
+}
+
+.btn-back:hover {
+  background: #5568d3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .edit-point-location {
+    padding: 1rem;
+  }
+
+  .edit-header h1 {
+    font-size: 2rem;
+  }
+
+  .point-info {
+    padding: 1rem;
+  }
+
+  .point-info h2 {
+    font-size: 1.5rem;
+  }
+
+  .map-container {
+    height: 400px;
+  }
+
+  .edit-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .edit-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .map-container {
+    height: 300px;
+  }
+}

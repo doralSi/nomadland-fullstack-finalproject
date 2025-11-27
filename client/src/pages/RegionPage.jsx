@@ -38,6 +38,10 @@ const RegionPage = () => {
     navigate(`/create-point?region=${slug}`);
   };
 
+  const handleViewEvents = () => {
+    navigate(`/region/${slug}/events`);
+  };
+
   const handleBackToGlobalMap = () => {
     navigate('/regions');
   };
@@ -101,6 +105,14 @@ const RegionPage = () => {
             </div>
           </button>
 
+          <button onClick={handleViewEvents} className="region-action-btn">
+            <span className="material-icons">event</span>
+            <div>
+              <h3>לוח אירועים</h3>
+              <p>צפה באירועים ומפגשים</p>
+            </div>
+          </button>
+
           <button onClick={handleViewPoints} className="region-action-btn">
             <span className="material-icons">list</span>
             <div>
@@ -144,11 +156,6 @@ const RegionPage = () => {
           <h2>Coming Soon</h2>
           <div className="coming-soon-features">
             <div className="feature-item">
-              <span className="material-icons">event</span>
-              <h3>Local Events</h3>
-              <p>Meetups, workshops, and community gatherings</p>
-            </div>
-            <div className="feature-item">
               <span className="material-icons">groups</span>
               <h3>Community Forum</h3>
               <p>Connect with fellow nomads</p>
@@ -157,6 +164,11 @@ const RegionPage = () => {
               <span className="material-icons">star</span>
               <h3>Featured Places</h3>
               <p>Curated recommendations from locals</p>
+            </div>
+            <div className="feature-item">
+              <span className="material-icons">info</span>
+              <h3>Local Resources</h3>
+              <p>Essential information and guides</p>
             </div>
           </div>
         </div>
