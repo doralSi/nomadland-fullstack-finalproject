@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Polygon, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Polygon, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useRegion } from '../context/RegionContext';
 import './GlobalMap.css';
@@ -9,20 +8,6 @@ import './GlobalMap.css';
 const GlobalMap = () => {
   const { regions, loading, error } = useRegion();
   const navigate = useNavigate();
-
-  // Custom marker icon for region centers
-  const createRegionIcon = () =>
-    L.divIcon({
-      html: `
-        <div class="region-marker">
-          <span class="material-icons">place</span>
-        </div>
-      `,
-      className: 'custom-region-icon',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -35]
-    });
 
   const handleRegionClick = (slug) => {
     navigate(`/region/${slug}`);
@@ -72,55 +57,39 @@ const GlobalMap = () => {
             const polygonCoords = region.polygon.map(coord => [coord[1], coord[0]]);
 
             return (
-              <React.Fragment key={region._id}>
-                {/* Region polygon */}
-                <Polygon
-                  positions={polygonCoords}
-                  pathOptions={{
-                    color: '#6e00ff',
-                    fillColor: '#6e00ff',
-                    fillOpacity: 0.08,
-                    weight: 2
-                  }}
-                  eventHandlers={{
-                    click: () => handleRegionClick(region.slug),
-                    mouseover: (e) => {
-                      e.target.setStyle({
-                        fillOpacity: 0.15,
-                        weight: 3
-                      });
-                    },
-                    mouseout: (e) => {
-                      e.target.setStyle({
-                        fillOpacity: 0.08,
-                        weight: 2
-                      });
-                    }
-                  }}
-                />
-
-                {/* Region center marker */}
-                <Marker
-                  position={[region.center.lat, region.center.lng]}
-                  icon={createRegionIcon()}
-                  eventHandlers={{
-                    click: () => handleRegionClick(region.slug)
-                  }}
+              <Polygon
+                key={region._id}
+                positions={polygonCoords}
+                pathOptions={{
+                  color: '#6e00ff',
+                  fillColor: '#6e00ff',
+                  fillOpacity: 0.08,
+                  weight: 2
+                }}
+                eventHandlers={{
+                  click: () => handleRegionClick(region.slug),
+                  mouseover: (e) => {
+                    e.target.setStyle({
+                      fillOpacity: 0.15,
+                      weight: 3
+                    });
+                  },
+                  mouseout: (e) => {
+                    e.target.setStyle({
+                      fillOpacity: 0.08,
+                      weight: 2
+                    });
+                  }
+                }}
+              >
+                <Tooltip 
+                  permanent={false}
+                  direction="center"
+                  className="region-tooltip"
                 >
-                  <Popup>
-                    <div className="region-popup">
-                      <h3>{region.name}</h3>
-                      <p>{region.description.substring(0, 100)}...</p>
-                      <button 
-                        className="region-popup-btn"
-                        onClick={() => handleRegionClick(region.slug)}
-                      >
-                        Explore Region
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              </React.Fragment>
+                  {region.name}
+                </Tooltip>
+              </Polygon>
             );
           })}
         </MapContainer>

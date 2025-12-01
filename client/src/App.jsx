@@ -3,13 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import MapRangerRoute from './components/MapRangerRoute';
-import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import CreatePoint from './pages/CreatePoint';
 import PointList from './pages/PointList';
 import PointDetails from './pages/PointDetails';
-import MapView from './pages/MapView';
 import GlobalMap from './pages/GlobalMap';
 import RegionPage from './pages/RegionPage';
 import EventsBoard from './pages/EventsBoard';
@@ -32,14 +30,12 @@ function App() {
       <div className="app">
         <Navbar />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<GlobalMap />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/regions" element={<GlobalMap />} />
           <Route path="/region/:slug" element={<RegionPage />} />
           <Route path="/region/:slug/events" element={<EventsBoard />} />
           <Route path="/event/:id" element={<EventDetails />} />
-          <Route path="/map" element={<MapView />} />
           <Route path="/points" element={<PointList />} />
           <Route path="/points/:id" element={<PointDetails />} />
           <Route
@@ -82,6 +78,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/personal-maps" element={<ProtectedRoute><MyMaps /></ProtectedRoute>} />
           <Route
             path="/me/maps/create"
             element={
@@ -137,4 +134,5 @@ function App() {
 }
 
 export default App;
+
 

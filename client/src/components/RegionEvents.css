@@ -1,0 +1,132 @@
+.region-events-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.events-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.events-header h3 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.add-event-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-event-btn:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.add-event-btn .material-icons {
+  font-size: 20px;
+}
+
+.events-loading,
+.events-error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.events-error {
+  color: #e74c3c;
+}
+
+.no-events {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #999;
+}
+
+.no-events .material-icons {
+  font-size: 80px;
+  color: #ddd;
+  margin-bottom: 1rem;
+}
+
+.no-events p {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.no-events-subtitle {
+  color: #bbb !important;
+  font-size: 1rem !important;
+}
+
+.events-section {
+  margin-bottom: 3rem;
+}
+
+.events-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.events-section-title .material-icons {
+  color: #667eea;
+  font-size: 28px;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .region-events-container {
+    padding: 1rem;
+  }
+
+  .events-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .events-header h3 {
+    font-size: 1.5rem;
+  }
+
+  .add-event-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .events-section-title {
+    font-size: 1.3rem;
+  }
+}

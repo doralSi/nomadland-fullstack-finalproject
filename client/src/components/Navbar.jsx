@@ -1,15 +1,22 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import RegionsDropdown from './RegionsDropdown';
 import './Navbar.css';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
+  const navigate = useNavigate();
 
   const toggleLanguage = () => {
     setLanguage(language === 'he' ? 'en' : 'he');
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -25,26 +32,13 @@ const Navbar = () => {
           </li>
           
           <li className="navbar-item">
-            <Link to="/regions" className="navbar-link">Regions</Link>
-          </li>
-          
-          <li className="navbar-item">
-            <Link to="/map" className="navbar-link">Map</Link>
+            <RegionsDropdown />
           </li>
           
           {isAuthenticated ? (
             <>
               <li className="navbar-item">
-                <Link to="/points" className="navbar-link">Points</Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/create-point" className="navbar-link">Create Point</Link>
-              </li>
-              <li className="navbar-item">
                 <Link to="/me/maps" className="navbar-link">My Maps</Link>
-              </li>
-              <li className="navbar-item">
-                <Link to="/me/events" className="navbar-link">My Events</Link>
               </li>
               {(user?.role === 'mapRanger' || user?.role === 'admin') && (
                 <li className="navbar-item">
@@ -66,7 +60,7 @@ const Navbar = () => {
                 </button>
               </li>
               <li className="navbar-item">
-                <button onClick={logout} className="navbar-button">Logout</button>
+                <button onClick={handleLogout} className="navbar-button">Logout</button>
               </li>
             </>
           ) : (
