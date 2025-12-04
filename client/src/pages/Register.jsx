@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 import './Auth.css';
 
 const Register = () => {
@@ -13,7 +14,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -51,6 +52,25 @@ const Register = () => {
     } else {
       setError(result.error);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setLoading(true);
+
+    const result = await googleLogin(credentialResponse.credential);
+    
+    setLoading(false);
+    
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error || 'Google login failed');
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed. Please try again.');
   };
 
   return (
@@ -117,6 +137,21 @@ const Register = () => {
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or continue with</span>
+        </div>
+
+        <div className="google-login-wrapper">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="outline"
+            size="large"
+            width="100%"
+          />
+        </div>
 
         <p className="auth-switch">
           Already have an account? <Link to="/login">Login here</Link>

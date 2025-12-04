@@ -106,7 +106,7 @@ export const getReviewsForPoint = async (req, res) => {
     const { pointId } = req.params;
 
     const reviews = await Review.find({ pointId })
-      .populate('userId', 'username email')
+      .populate('userId', 'name email')
       .sort({ createdAt: -1 });
 
     res.json(reviews);

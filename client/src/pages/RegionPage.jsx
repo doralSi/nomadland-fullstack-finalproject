@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRegion } from '../context/RegionContext';
 import RegionHero from '../components/RegionHero';
+import CategoryFilterBar from '../components/CategoryFilterBar';
 import RegionMap from '../components/RegionMap';
 import RegionEvents from '../components/RegionEvents';
 import RegionPointsList from '../components/RegionPointsList';
@@ -14,6 +15,7 @@ const RegionPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('events');
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     const loadRegion = async () => {
@@ -33,6 +35,10 @@ const RegionPage = () => {
 
   const handleBackToGlobalMap = () => {
     navigate('/regions');
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
   };
 
   if (loading) {
@@ -71,21 +77,30 @@ const RegionPage = () => {
         <p>{currentRegion.description}</p>
       </div>
 
-      <RegionMap region={currentRegion} />
+      <CategoryFilterBar 
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleCategorySelect}
+      />
+
+      <RegionMap region={currentRegion} selectedCategory={selectedCategory} />
 
       <div className="region-tabs-section">
         <div className="region-tabs">
           <button 
             className={`region-tab ${activeTab === 'events' ? 'active' : ''}`}
             onClick={() => setActiveTab('events')}
+            data-label="Events"
+            aria-label="Events"
           >
-            Events
+            <span className="material-symbols-outlined">event</span>
           </button>
           <button 
             className={`region-tab ${activeTab === 'points' ? 'active' : ''}`}
             onClick={() => setActiveTab('points')}
+            data-label="Points"
+            aria-label="Points List"
           >
-            Points List
+            <span className="material-symbols-outlined">list</span>
           </button>
         </div>
 

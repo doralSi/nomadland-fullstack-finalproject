@@ -3,14 +3,16 @@ import './RegionHero.css';
 
 const RegionHero = ({ name, subtitle, imageUrl, about, onBackClick }) => {
   return (
-    <div 
-      className="region-hero"
-      style={{ 
-        backgroundImage: imageUrl 
-          ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${imageUrl})`
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}
-    >
+    <div className="region-hero">
+      {imageUrl ? (
+        <>
+          <img src={imageUrl} alt={name} className="region-hero-image" />
+          <div className="region-hero-overlay"></div>
+        </>
+      ) : (
+        <div className="region-hero-gradient"></div>
+      )}
+      
       <button onClick={onBackClick} className="back-to-regions-btn">
         <span className="material-symbols-outlined">arrow_back</span>
         All Regions

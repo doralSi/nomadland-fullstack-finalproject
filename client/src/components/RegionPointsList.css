@@ -107,33 +107,34 @@
 .point-item {
   display: flex;
   gap: 1.5rem;
-  padding: 1.5rem;
+  padding: 20px;
   background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .point-item:hover {
   border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
+  transform: translateY(-4px);
 }
 
 .point-icon {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
 }
 
-.point-icon .material-icons {
+.point-icon .material-symbols-outlined {
   font-size: 28px;
 }
 
@@ -156,13 +157,14 @@
 
 .point-category-badge {
   display: inline-block;
-  background: #f0f0f0;
-  color: #666;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  background: #f5f5f5;
+  color: #667eea;
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
+  border: 1px solid #e8e8e8;
 }
 
 .point-rating {

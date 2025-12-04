@@ -1,5 +1,10 @@
 .event-modal {
   max-width: 600px;
+  border-radius: 20px;
+}
+
+.event-modal .modal-card {
+  border-radius: 20px;
 }
 
 .form-row {

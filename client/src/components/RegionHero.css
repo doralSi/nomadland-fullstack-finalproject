@@ -1,15 +1,43 @@
 .region-hero {
   width: 100%;
   height: 400px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   color: white;
+  overflow: hidden;
+}
+
+.region-hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.region-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.region-hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: 1;
 }
 
 .back-to-regions-btn {
@@ -64,19 +92,29 @@
 
 @media (max-width: 768px) {
   .region-hero {
-    height: 300px;
+    height: 350px;
   }
 
   .region-hero h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
 
   .region-hero-subtitle {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 
   .back-to-regions-btn {
-    padding: 0.6rem 1rem;
+    top: 1.5rem;
+    left: 1rem;
+    padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
+  }
+
+  .back-to-regions-btn .material-symbols-outlined {
+    font-size: 18px;
+  }
+
+  .region-hero-content {
+    padding: 1.5rem;
   }
 }

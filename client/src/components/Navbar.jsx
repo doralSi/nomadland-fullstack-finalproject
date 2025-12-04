@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,6 +9,7 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === 'he' ? 'en' : 'he');
@@ -17,32 +18,51 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
+        <Link to="/" className="navbar-logo" onClick={closeMobileMenu}>
           NomadLand
         </Link>
+
+        <button 
+          className="navbar-hamburger"
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+          <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+          <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+        </button>
         
-        <ul className="navbar-menu">
+        <ul className={`navbar-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           <li className="navbar-item">
-            <Link to="/" className="navbar-link">Home</Link>
+            <Link to="/" className="navbar-link" onClick={closeMobileMenu}>Home</Link>
           </li>
           
           <li className="navbar-item">
-            <RegionsDropdown />
+            <RegionsDropdown onNavigate={closeMobileMenu} />
           </li>
           
           {isAuthenticated ? (
             <>
               <li className="navbar-item">
-                <Link to="/me/maps" className="navbar-link">My Maps</Link>
+                <Link to="/me/maps" className="navbar-link" onClick={closeMobileMenu}>My Maps</Link>
               </li>
               {(user?.role === 'mapRanger' || user?.role === 'admin') && (
                 <li className="navbar-item">
-                  <Link to="/map-ranger" className="navbar-link navbar-link-highlight">
+                  <Link to="/map-ranger" className="navbar-link navbar-link-highlight" onClick={closeMobileMenu}>
                     🗺️ Map Ranger Panel
                   </Link>
                 </li>
@@ -66,10 +86,10 @@ const Navbar = () => {
           ) : (
             <>
               <li className="navbar-item">
-                <Link to="/login" className="navbar-link">Login</Link>
+                <Link to="/login" className="navbar-link" onClick={closeMobileMenu}>Login</Link>
               </li>
               <li className="navbar-item">
-                <Link to="/register" className="navbar-link">Register</Link>
+                <Link to="/register" className="navbar-link" onClick={closeMobileMenu}>Register</Link>
               </li>
             </>
           )}

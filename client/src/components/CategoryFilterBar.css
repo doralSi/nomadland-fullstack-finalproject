@@ -1,0 +1,93 @@
+/* Category Filter Bar */
+.category-filter-bar {
+  width: 100%;
+  background: #fff;
+  padding: 24px 0;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.category-filter-bar-content {
+  display: flex;
+  gap: 12px;
+  padding: 0 24px;
+  min-width: min-content;
+}
+
+.category-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #f5f5f5;
+  border: 2px solid transparent;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-filter-chip .material-symbols-outlined {
+  font-size: 20px;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.category-filter-chip:hover {
+  background: #ececec;
+  border-color: #d0d0d0;
+}
+
+.category-filter-chip.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.category-filter-chip.active .material-symbols-outlined {
+  color: white;
+}
+
+/* Scrollbar styling for horizontal scroll */
+.category-filter-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.category-filter-bar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.category-filter-bar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.category-filter-bar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .category-filter-bar {
+    padding: 16px 0;
+  }
+
+  .category-filter-bar-content {
+    padding: 0 16px;
+  }
+
+  .category-filter-chip {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .category-filter-chip .material-symbols-outlined {
+    font-size: 18px;
+  }
+}

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CATEGORIES } from '../constants/categories';
 import './CategoryFilter.css';
 
 const CategoryFilter = ({ selectedCategories, onToggleCategory }) => {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   const handleCategoryClick = (categoryKey) => {
     onToggleCategory(categoryKey);
   };
@@ -23,15 +25,23 @@ const CategoryFilter = ({ selectedCategories, onToggleCategory }) => {
     <div className="category-filter">
       <div className="filter-header">
         <h3>Filter by Category</h3>
-        <button 
-          className={`select-all-btn ${allSelected ? 'all-selected' : ''}`}
-          onClick={handleSelectAll}
-        >
-          {allSelected ? 'Clear All' : 'Select All'}
-        </button>
+        <div className="filter-actions">
+          <button 
+            className={`select-all-btn ${allSelected ? 'all-selected' : ''}`}
+            onClick={handleSelectAll}
+          >
+            {allSelected ? 'Clear All' : 'Select All'}
+          </button>
+          <button 
+            className="mobile-toggle-btn"
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+          >
+            {isMobileOpen ? '▲ Hide' : '▼ Show'}
+          </button>
+        </div>
       </div>
       
-      <div className="category-buttons">
+      <div className={`category-buttons ${isMobileOpen ? 'mobile-open' : ''}`}>
         {CATEGORIES.map((category) => {
           const isActive = selectedCategories.includes(category.key);
           
@@ -40,9 +50,9 @@ const CategoryFilter = ({ selectedCategories, onToggleCategory }) => {
               key={category.key}
               className={`category-btn ${isActive ? 'active' : ''}`}
               onClick={() => handleCategoryClick(category.key)}
-              title={category.label}
+              data-tooltip={category.label}
             >
-              <span className="material-symbols-outlined">
+              <span className="material-symbols-outlined category-icon">
                 {category.materialIcon}
               </span>
               <span className="category-label">{category.label}</span>

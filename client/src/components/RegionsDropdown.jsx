@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRegion } from '../context/RegionContext';
 import './RegionsDropdown.css';
 
-const RegionsDropdown = () => {
+const RegionsDropdown = ({ onNavigate }) => {
   const { regions, loading } = useRegion();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -26,6 +26,9 @@ const RegionsDropdown = () => {
   const handleRegionClick = (slug) => {
     navigate(`/region/${slug}`);
     setIsOpen(false);
+    if (onNavigate) {
+      onNavigate();
+    }
   };
 
   return (
