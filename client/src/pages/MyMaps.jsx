@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from '../api/axiosInstance';
+import { getUserRegions } from '../api/personalMaps';
 import { useAuth } from '../context/AuthContext';
 import './MyMaps.css';
 
 const MyMaps = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [maps, setMaps] = useState([]);
+  const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (user) {
-      fetchMyMaps();
+      fetchUserRegions();
     }
   }, [user]);
 
-  const fetchMyMaps = async () => {
+  const fetchUserRegions = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('/personal-maps/my');
-      setMaps(response.data.maps || []);
+      const response = await getUserRegions();
+      setRegions(response.regions || []);
     } catch (err) {
-      console.error('Error fetching my maps:', err);
-      setError(err.response?.data?.message || 'Failed to load maps');
+      console.error('Error fetching user regions:', err);
+      setError(err.response?.data?.message || 'Failed to load regions');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const MyMaps = () => {
     return (
       <div className="my-maps-container">
         <div className="error">{error}</div>
-        <button onClick={fetchMyMaps} className="btn-retry">
+        <button onClick={fetchUserRegions} className="btn-retry">
           Try Again
         </button>
       </div>
@@ -81,65 +81,54 @@ const MyMaps = () => {
   return (
     <div className="my-maps-container">
       <div className="my-maps-header">
-        <h1>My Personal Maps</h1>
-        <button
-          className="btn-create-map"
-          onClick={() => navigate('/me/maps/create')}
-        >
-          + Create New Map
-        </button>
+        <h1>My NomadLand Maps</h1>
+        <p>Your personal journey across digital nomad communities</p>
       </div>
 
-      {maps.length === 0 ? (
+      {regions.length === 0 ? (
         <div className="no-maps">
-          <p>You haven't created any maps yet.</p>
-          <p>Start by creating your first personal map collection!</p>
+          <p>You haven't created or favorited any points yet.</p>
+          <p>Start exploring the map and add your favorite places!</p>
           <button
             className="btn-primary"
-            onClick={() => navigate('/me/maps/create')}
+            onClick={() => navigate('/')}
           >
-            Create Your First Map
+            Go to Map
           </button>
         </div>
       ) : (
-        <div className="maps-grid">
-          {maps.map((map) => (
-            <div key={map._id} className="map-card">
-              {map.coverImage && (
-                <div
-                  className="map-card-image"
-                  style={{ backgroundImage: `url(${map.coverImage})` }}
-                />
+        <div className="regions-grid">
+          {regions.map((region) => (
+            <div
+              key={region._id}
+              className="region-card"
+              onClick={() => navigate(`/me/maps/${region.slug}`)}
+            >
+              {region.heroImageUrl && (
+                <div className="region-image">
+                  <img src={region.heroImageUrl} alt={region.name} />
+                </div>
               )}
-              <div className="map-card-content">
-                <h3>{map.title}</h3>
-                {map.description && <p className="map-description">{map.description}</p>}
-                <p className="map-points-count">
-                  {map.pointIds?.length || 0} point{map.pointIds?.length !== 1 ? 's' : ''}
-                </p>
-                <p className="map-date">
-                  Updated: {new Date(map.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="map-card-actions">
-                <button
-                  className="btn-view"
-                  onClick={() => navigate(`/me/maps/${map._id}`)}
-                >
-                  View
-                </button>
-                <button
-                  className="btn-edit"
-                  onClick={() => navigate(`/me/maps/${map._id}/edit`)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDelete(map._id)}
-                >
-                  Delete
-                </button>
+              <div className="region-content">
+                <h3>{region.name}</h3>
+                <div className="region-stats">
+                  <span className="stat">
+                    <span className="material-symbols-outlined">add_location</span>
+                    {region.createdCount} created
+                  </span>
+                  <span className="stat">
+                    <span className="material-symbols-outlined">favorite</span>
+                    {region.favoriteCount} favorited
+                  </span>
+                  <span className="stat">
+                    <span className="material-symbols-outlined">rate_review</span>
+                    {region.reviewedCount || 0} reviewed
+                  </span>
+                  <span className="stat total">
+                    <span className="material-symbols-outlined">location_on</span>
+                    {region.pointCount} total
+                  </span>
+                </div>
               </div>
             </div>
           ))}

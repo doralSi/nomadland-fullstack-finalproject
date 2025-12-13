@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { addToFavorites, removeFromFavorites } from '../api/points';
 import { useAuth } from '../context/AuthContext';
 import { CATEGORIES } from '../constants/categories';
 import ReviewList from '../components/ReviewList';
@@ -16,10 +17,49 @@ const PointDetails = () => {
   const [error, setError] = useState('');
   const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useEffect(() => {
     fetchPoint();
-  }, [id]);
+    if (user) {
+      checkFavoriteStatus();
+    }
+  }, [id, user]);
+
+  const checkFavoriteStatus = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/me');
+      const favoritePoints = response.data.user.favoritePoints || [];
+      setIsFavorite(favoritePoints.includes(id));
+    } catch (err) {
+      console.error('Failed to check favorite status:', err);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      alert('Please log in to add favorites');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setFavoriteLoading(true);
+      if (isFavorite) {
+        await removeFromFavorites(id);
+        setIsFavorite(false);
+      } else {
+        await addToFavorites(id);
+        setIsFavorite(true);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+      alert(err.response?.data?.message || 'Failed to update favorite');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (point) {
@@ -120,10 +160,24 @@ const PointDetails = () => {
 
         <div className="point-details-content">
           <div className="point-details-header">
-            <h1>{point.title}</h1>
-            <span className="point-details-category">
-              {CATEGORIES.find(c => c.key === point.category)?.label || point.category}
-            </span>
+            <div className="header-left">
+              <h1>{point.title}</h1>
+              <span className="point-details-category">
+                {CATEGORIES.find(c => c.key === point.category)?.label || point.category}
+              </span>
+            </div>
+            {user && (
+              <button
+                className={`btn-favorite ${isFavorite ? 'favorite-active' : ''}`}
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+              >
+                <span className="material-symbols-outlined">
+                  {isFavorite ? 'favorite' : 'favorite_border'}
+                </span>
+                {isFavorite ? 'Favorited' : 'Add to Favorites'}
+              </button>
+            )}
           </div>
 
           <p className="point-details-description">{point.description}</p>

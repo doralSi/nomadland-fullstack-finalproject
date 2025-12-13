@@ -23,13 +23,28 @@ const CalendarView = ({ events = [], region, onEventClick, onAddEvent }) => {
 
   // Transform events to calendar format
   const calendarEvents = useMemo(() => {
-    return events.map(event => ({
-      id: event._id,
-      title: event.title,
-      start: new Date(event.date || event.startDate),
-      end: new Date(event.endDate || event.date || event.startDate),
-      resource: event, // Keep original event data
-    }));
+    return events.map(event => {
+      const startDate = new Date(event.date || event.startDate);
+      let endDate = new Date(event.endDate || event.date || event.startDate);
+      
+      // If event has time and duration, calculate end time
+      if (event.time && event.duration && !event.isAllDay) {
+        const [hours, minutes] = event.time.split(':').map(Number);
+        startDate.setHours(hours, minutes || 0, 0, 0);
+        
+        endDate = new Date(startDate);
+        endDate.setHours(startDate.getHours() + event.duration);
+      }
+      
+      return {
+        id: event._id,
+        title: event.title,
+        start: startDate,
+        end: endDate,
+        allDay: event.isAllDay || false,
+        resource: event, // Keep original event data
+      };
+    });
   }, [events]);
 
   const handleSelectEvent = (event) => {
@@ -128,9 +143,11 @@ const CalendarView = ({ events = [], region, onEventClick, onAddEvent }) => {
           eventPropGetter={eventStyleGetter}
           popup
           views={['month', 'week', 'day']}
+          step={60}
+          timeslots={1}
           messages={{
-            next: 'Next',
-            previous: 'Previous',
+            next: '›',
+            previous: '‹',
             today: 'Today',
             month: 'Month',
             week: 'Week',

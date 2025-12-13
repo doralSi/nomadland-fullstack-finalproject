@@ -1,9 +1,10 @@
 import Point from '../models/Point.js';
+import User from '../models/User.js';
 
 // Create a new point
 export const createPoint = async (req, res) => {
   try {
-    const { title, description, category, lat, lng, images, language } = req.body;
+    const { title, description, category, lat, lng, images, language, isPrivate } = req.body;
 
     // Validate required fields
     if (!title || lat === undefined || lng === undefined) {
@@ -20,6 +21,7 @@ export const createPoint = async (req, res) => {
       lng,
       images: images || [],
       language: language || 'he',
+      isPrivate: isPrivate || false,
       createdBy: req.user.id
     });
 
@@ -40,6 +42,19 @@ export const getPoints = async (req, res) => {
     
     // Build filter query
     let filter = {};
+    
+    // Only show public points, or private points created by the current user
+    if (req.user) {
+      filter.$or = [
+        { isPrivate: { $ne: true } },
+        { isPrivate: true, createdBy: req.user.id }
+      ];
+    } else {
+      filter.$or = [
+        { isPrivate: { $exists: false } },
+        { isPrivate: false }
+      ];
+    }
     
     // Language filtering
     // Map Rangers and Admins see all languages (handled by client)
@@ -133,6 +148,68 @@ export const deletePoint = async (req, res) => {
     if (error.kind === 'ObjectId') {
       return res.status(404).json({ message: 'Point not found' });
     }
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Add point to favorites
+export const addToFavorites = async (req, res) => {
+  try {
+    const pointId = req.params.id;
+    const userId = req.user.id;
+
+    // Check if point exists
+    const point = await Point.findById(pointId);
+    if (!point) {
+      return res.status(404).json({ message: 'Point not found' });
+    }
+
+    // Find user and add to favorites if not already there
+    const user = await User.findById(userId);
+    if (!user.favoritePoints.includes(pointId)) {
+      user.favoritePoints.push(pointId);
+      await user.save();
+    }
+
+    res.json({ message: 'Point added to favorites', favoritePoints: user.favoritePoints });
+  } catch (error) {
+    console.error('Add to favorites error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Remove point from favorites
+export const removeFromFavorites = async (req, res) => {
+  try {
+    const pointId = req.params.id;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    user.favoritePoints = user.favoritePoints.filter(
+      id => id.toString() !== pointId
+    );
+    await user.save();
+
+    res.json({ message: 'Point removed from favorites', favoritePoints: user.favoritePoints });
+  } catch (error) {
+    console.error('Remove from favorites error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get user's favorite points
+export const getFavoritePoints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).populate({
+      path: 'favoritePoints',
+      populate: { path: 'createdBy', select: 'username email' }
+    });
+
+    res.json(user.favoritePoints || []);
+  } catch (error) {
+    console.error('Get favorites error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

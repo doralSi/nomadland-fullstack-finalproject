@@ -77,8 +77,16 @@ const eventTemplateSchema = new mongoose.Schema({
   },
   time: {
     type: String,
-    required: true,
     trim: true
+  },
+  duration: {
+    type: Number,
+    min: 1,
+    max: 24
+  },
+  isAllDay: {
+    type: Boolean,
+    default: false
   },
   location: {
     lat: {
@@ -100,6 +108,17 @@ const eventTemplateSchema = new mongoose.Schema({
     enum: ['underReview', 'approved', 'rejected'],
     default: 'underReview'
   },
+  rsvps: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   overrides: [overrideSchema]
 }, {
   timestamps: true

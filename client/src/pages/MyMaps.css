@@ -1,27 +1,29 @@
 .my-maps-container {
   width: 100%;
   min-height: calc(100vh - 80px);
-  padding: 2rem;
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 1rem;
 }
 
 .my-maps-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  text-align: center;
   max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 2rem;
 }
 
 .my-maps-header h1 {
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #555;
   margin: 0;
 }
 
@@ -114,24 +116,143 @@
   padding: 4rem 2rem;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   margin: 2rem auto;
 }
 
 .no-maps p {
   font-size: 1.2rem;
-  color: #666;
+  color: #555;
   margin-bottom: 1rem;
 }
 
+.btn-primary {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
 /* Maps Grid */
-.maps-grid {
+.maps-grid,
+.regions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Region Card */
+.region-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.region-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.region-image {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+}
+
+.region-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.region-card:hover .region-image img {
+  transform: scale(1.05);
+}
+
+.region-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.region-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+.region-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.stat .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.stat.total {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.btn-view-map {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-view-map:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-view-map .material-symbols-outlined {
+  font-size: 20px;
 }
 
 /* Map Card */

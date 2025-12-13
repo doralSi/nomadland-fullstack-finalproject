@@ -41,3 +41,15 @@ export const removePointFromMap = async (mapId, pointId) => {
   const response = await axiosInstance.patch(`/personal-maps/${mapId}/remove/${pointId}`);
   return response.data;
 };
+
+// Get regions where user has created or favorited points
+export const getUserRegions = async () => {
+  const response = await axiosInstance.get('/personal-maps/regions');
+  return response.data;
+};
+
+// Get user's points in a specific region
+export const getUserPointsInRegion = async (regionSlug) => {
+  const response = await axiosInstance.get(`/personal-maps/regions/${regionSlug}`);
+  return response.data;
+};

@@ -16,6 +16,7 @@ import AddEvent from './pages/AddEvent';
 import EditEvent from './pages/EditEvent';
 import MyEvents from './pages/MyEvents';
 import MyMaps from './pages/MyMaps';
+import PersonalRegionMap from './pages/PersonalRegionMap';
 import CreateMap from './pages/CreateMap';
 import EditMap from './pages/EditMap';
 import ViewMap from './pages/ViewMap';
@@ -75,6 +76,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyMaps />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/me/maps/:regionSlug"
+            element={
+              <ProtectedRoute>
+                <PersonalRegionMap />
               </ProtectedRoute>
             }
           />

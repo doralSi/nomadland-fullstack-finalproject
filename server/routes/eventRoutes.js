@@ -7,7 +7,10 @@ import {
   getEventTemplateById,
   updateEventTemplate,
   deleteEventTemplate,
-  getMyEvents
+  getMyEvents,
+  addRSVP,
+  removeRSVP,
+  getEventRSVPs
 } from '../controllers/eventController.js';
 
 const router = express.Router();
@@ -20,6 +23,11 @@ router.get('/', getEventsInRange);
 
 // Public route - get single event template
 router.get('/:id', getEventTemplateById);
+
+// RSVP routes
+router.post('/:id/rsvp', authMiddleware, addRSVP);
+router.delete('/:id/rsvp', authMiddleware, removeRSVP);
+router.get('/:id/rsvps', getEventRSVPs);
 
 // Protected route - create event template (requires authentication)
 router.post('/', authMiddleware, createEventTemplate);

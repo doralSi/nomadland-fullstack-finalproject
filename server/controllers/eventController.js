@@ -29,23 +29,57 @@ function generateEventInstances(template, fromDate, toDate) {
   if (start > end) return instances;
 
   if (template.repeat === 'none') {
-    // Single event
-    const eventDate = new Date(template.startDate);
-    if (eventDate >= start && eventDate <= end) {
-      instances.push({
-        templateId: template._id,
-        date: eventDate,
-        title: template.title,
-        description: template.description,
-        imageUrl: template.imageUrl,
-        cost: template.cost,
-        time: template.time,
-        location: template.location,
-        region: template.region,
-        language: template.language,
-        createdBy: template.createdBy,
-        status: template.status
-      });
+    // Single or multi-day event
+    const templateStart = new Date(template.startDate);
+    const templateEnd = new Date(template.endDate);
+    
+    // Check if it's a multi-day event
+    if (templateStart.toDateString() !== templateEnd.toDateString()) {
+      // Multi-day event - create an instance for each day
+      let currentDate = new Date(Math.max(templateStart, start));
+      const lastDay = new Date(Math.min(templateEnd, end));
+      
+      while (currentDate <= lastDay) {
+        instances.push({
+          templateId: template._id,
+          date: new Date(currentDate),
+          title: template.title,
+          description: template.description,
+          imageUrl: template.imageUrl,
+          cost: template.cost,
+          time: template.time,
+          duration: template.duration,
+          isAllDay: true, // Multi-day events are treated as all-day
+          location: template.location,
+          region: template.region,
+          language: template.language,
+          createdBy: template.createdBy,
+          status: template.status,
+          rsvps: template.rsvps || []
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    } else {
+      // Single-day event
+      if (templateStart >= start && templateStart <= end) {
+        instances.push({
+          templateId: template._id,
+          date: templateStart,
+          title: template.title,
+          description: template.description,
+          imageUrl: template.imageUrl,
+          cost: template.cost,
+          time: template.time,
+          duration: template.duration,
+          isAllDay: template.isAllDay,
+          location: template.location,
+          region: template.region,
+          language: template.language,
+          createdBy: template.createdBy,
+          status: template.status,
+          rsvps: template.rsvps || []
+        });
+      }
     }
   } else if (template.repeat === 'daily') {
     // Daily repetition
@@ -59,11 +93,14 @@ function generateEventInstances(template, fromDate, toDate) {
         imageUrl: template.imageUrl,
         cost: template.cost,
         time: template.time,
+        duration: template.duration,
+        isAllDay: template.isAllDay,
         location: template.location,
         region: template.region,
         language: template.language,
         createdBy: template.createdBy,
-        status: template.status
+        status: template.status,
+        rsvps: template.rsvps || []
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -81,11 +118,14 @@ function generateEventInstances(template, fromDate, toDate) {
           imageUrl: template.imageUrl,
           cost: template.cost,
           time: template.time,
+          duration: template.duration,
+          isAllDay: template.isAllDay,
           location: template.location,
           region: template.region,
           language: template.language,
           createdBy: template.createdBy,
-          status: template.status
+          status: template.status,
+          rsvps: template.rsvps || []
         });
       }
       currentDate.setDate(currentDate.getDate() + 1);
@@ -106,11 +146,14 @@ function generateEventInstances(template, fromDate, toDate) {
           imageUrl: template.imageUrl,
           cost: template.cost,
           time: template.time,
+          duration: template.duration,
+          isAllDay: template.isAllDay,
           location: template.location,
           region: template.region,
           language: template.language,
           createdBy: template.createdBy,
-          status: template.status
+          status: template.status,
+          rsvps: template.rsvps || []
         });
       }
       currentDate.setMonth(currentDate.getMonth() + 1);
@@ -161,11 +204,13 @@ export const createEventTemplate = async (req, res) => {
       startDate,
       endDate,
       time,
+      duration,
+      isAllDay,
       location
     } = req.body;
 
     // Validate required fields
-    if (!title || !description || !region || !startDate || !endDate || !time || !location) {
+    if (!title || !description || !region || !startDate || !endDate || !location) {
       return res.status(400).json({
         message: 'Missing required fields'
       });
@@ -215,10 +260,12 @@ export const createEventTemplate = async (req, res) => {
       repeatDays: repeat === 'weekly' ? repeatDays : undefined,
       startDate,
       endDate,
-      time,
+      time: time || undefined,
+      duration: duration || undefined,
+      isAllDay: isAllDay || false,
       location,
       createdBy: req.user.id,
-      status: 'underReview'
+      status: 'approved'
     });
 
     await eventTemplate.save();
@@ -235,11 +282,14 @@ export const createEventTemplate = async (req, res) => {
 // Get events in range (with dynamic instance generation)
 export const getEventsInRange = async (req, res) => {
   try {
-    const { region, from, to, languages } = req.query;
+    const { region, languages } = req.query;
+    // Support both 'from/to' and 'startDate/endDate' parameters
+    const from = req.query.from || req.query.startDate;
+    const to = req.query.to || req.query.endDate;
 
     if (!from || !to) {
       return res.status(400).json({
-        message: 'from and to dates are required'
+        message: 'from/startDate and to/endDate dates are required'
       });
     }
 
@@ -284,7 +334,10 @@ export const getEventsInRange = async (req, res) => {
     allInstances.sort((a, b) => {
       const dateCompare = new Date(a.date) - new Date(b.date);
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      // Handle missing time values
+      const timeA = a.time || '';
+      const timeB = b.time || '';
+      return timeA.localeCompare(timeB);
     });
 
     res.json(allInstances);
@@ -299,7 +352,8 @@ export const getEventTemplateById = async (req, res) => {
   try {
     const eventTemplate = await EventTemplate.findById(req.params.id)
       .populate('createdBy', 'username email')
-      .populate('region', 'name slug');
+      .populate('region', 'name slug')
+      .populate('rsvps.user', 'username email');
 
     if (!eventTemplate) {
       return res.status(404).json({ message: 'Event not found' });
@@ -415,6 +469,96 @@ export const getMyEvents = async (req, res) => {
     res.json(events);
   } catch (error) {
     console.error('Get my events error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Add RSVP to event
+export const addRSVP = async (req, res) => {
+  try {
+    const eventTemplate = await EventTemplate.findById(req.params.id);
+
+    if (!eventTemplate) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Check if user already RSVP'd
+    const existingRSVP = eventTemplate.rsvps.find(
+      rsvp => rsvp.user.toString() === req.user.id
+    );
+
+    if (existingRSVP) {
+      return res.status(400).json({ message: 'You already RSVP\'d to this event' });
+    }
+
+    // Add RSVP
+    eventTemplate.rsvps.push({
+      user: req.user.id,
+      date: new Date()
+    });
+
+    await eventTemplate.save();
+    await eventTemplate.populate('rsvps.user', 'username email');
+
+    res.json({
+      message: 'RSVP added successfully',
+      rsvpCount: eventTemplate.rsvps.length,
+      rsvps: eventTemplate.rsvps
+    });
+  } catch (error) {
+    console.error('Add RSVP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Remove RSVP from event
+export const removeRSVP = async (req, res) => {
+  try {
+    const eventTemplate = await EventTemplate.findById(req.params.id);
+
+    if (!eventTemplate) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Find and remove RSVP
+    const rsvpIndex = eventTemplate.rsvps.findIndex(
+      rsvp => rsvp.user.toString() === req.user.id
+    );
+
+    if (rsvpIndex === -1) {
+      return res.status(400).json({ message: 'You have not RSVP\'d to this event' });
+    }
+
+    eventTemplate.rsvps.splice(rsvpIndex, 1);
+
+    await eventTemplate.save();
+
+    res.json({
+      message: 'RSVP removed successfully',
+      rsvpCount: eventTemplate.rsvps.length
+    });
+  } catch (error) {
+    console.error('Remove RSVP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get RSVPs for an event
+export const getEventRSVPs = async (req, res) => {
+  try {
+    const eventTemplate = await EventTemplate.findById(req.params.id)
+      .populate('rsvps.user', 'username email');
+
+    if (!eventTemplate) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    res.json({
+      rsvpCount: eventTemplate.rsvps.length,
+      rsvps: eventTemplate.rsvps
+    });
+  } catch (error) {
+    console.error('Get RSVPs error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

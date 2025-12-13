@@ -7,7 +7,8 @@ const AddPointModal = ({ location, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: CATEGORIES[0].key
+    category: CATEGORIES[0].key,
+    isPrivate: false
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -96,6 +97,18 @@ const AddPointModal = ({ location, onClose, onSuccess }) => {
               rows={4}
               maxLength={500}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="isPrivate"
+                checked={formData.isPrivate}
+                onChange={(e) => setFormData({ ...formData, isPrivate: e.target.checked })}
+              />
+              <span>Private Point (only visible to you)</span>
+            </label>
           </div>
 
           <div className="form-group location-display">

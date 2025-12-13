@@ -27,10 +27,28 @@ export const deletePoint = async (id) => {
   return response.data;
 };
 
+export const addToFavorites = async (id) => {
+  const response = await axiosInstance.post(`/points/${id}/favorite`);
+  return response.data;
+};
+
+export const removeFromFavorites = async (id) => {
+  const response = await axiosInstance.delete(`/points/${id}/favorite`);
+  return response.data;
+};
+
+export const getFavoritePoints = async () => {
+  const response = await axiosInstance.get('/points/favorites/my');
+  return response.data;
+};
+
 export default {
   getPoints,
   getPointById,
   createPoint,
   updatePoint,
-  deletePoint
+  deletePoint,
+  addToFavorites,
+  removeFromFavorites,
+  getFavoritePoints
 };

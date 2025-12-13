@@ -414,6 +414,65 @@
   animation: searchPulse 2s infinite;
 }
 
+/* Event marker highlight - temporary marker for events */
+.custom-event-marker {
+  background: none;
+  border: none;
+}
+
+.event-marker-highlight {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(245, 87, 108, 0.5);
+  border: 3px solid white;
+  animation: eventPulse 2s ease-in-out infinite;
+  position: relative;
+}
+
+.event-marker-highlight::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(245, 87, 108, 0.3);
+  animation: eventRipple 2s ease-out infinite;
+}
+
+.event-marker-highlight .material-symbols-outlined {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  z-index: 1;
+}
+
+@keyframes eventPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 16px rgba(245, 87, 108, 0.5);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 6px 24px rgba(245, 87, 108, 0.7);
+  }
+}
+
+@keyframes eventRipple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
 @keyframes searchPulse {
   0%, 100% {
     transform: scale(1);
@@ -596,6 +655,40 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
+}
+
+.popup-btn-favorite {
+  flex: 0 0 auto;
+  width: 48px;
+  padding: 12px;
+  background: white;
+  color: #999;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-btn-favorite:hover {
+  background: #fff5f5;
+  color: #e74c3c;
+  border-color: #e74c3c;
+  transform: translateY(-1px);
+}
+
+.popup-btn-favorite.is-favorite {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+.popup-btn-favorite.is-favorite:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+.popup-btn-favorite .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .popup-btn-primary-pro {

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getPoints } from '../api/points';
+import { getPoints, addToFavorites, removeFromFavorites } from '../api/points';
 import { polygonToLeafletFormat, isPointInsideRegion } from '../utils/isInsidePolygon';
 import { CATEGORIES } from '../constants/categories';
+import { useAuth } from '../context/AuthContext';
 import AddPointModal from './AddPointModal';
 import './RegionMap.css';
 
@@ -87,8 +88,9 @@ const MapInstanceCapture = ({ onMapReady }) => {
   return null;
 };
 
-const RegionMap = ({ region, selectedCategories = [] }) => {
+const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddingPoint, setIsAddingPoint] = useState(false);
@@ -104,10 +106,57 @@ const RegionMap = ({ region, selectedCategories = [] }) => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReviewFormModal, setShowReviewFormModal] = useState(false);
   const [pointReviews, setPointReviews] = useState([]);
+  const [favoritePoints, setFavoritePoints] = useState([]);
+  const eventMarkerRef = useRef(null);
 
   useEffect(() => {
     loadPoints();
-  }, [region]);
+    if (user) {
+      loadFavorites();
+    }
+  }, [region, user]);
+
+  const loadFavorites = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      setFavoritePoints(data.user.favoritePoints || []);
+    } catch (err) {
+      console.error('Failed to load favorites:', err);
+    }
+  };
+
+  // Effect to zoom to event location when eventToShow changes
+  useEffect(() => {
+    if (eventToShow && eventToShow.location && mapInstance) {
+      console.log('🎯 Showing event on map:', eventToShow);
+      console.log('📍 Event location:', eventToShow.location);
+      
+      mapInstance.flyTo([eventToShow.location.lat, eventToShow.location.lng], 15, {
+        duration: 1.5
+      });
+      
+      // Open the event marker popup after zoom animation
+      setTimeout(() => {
+        if (eventMarkerRef.current) {
+          console.log('🎈 Opening event popup');
+          eventMarkerRef.current.openPopup();
+        } else {
+          console.log('❌ Event marker ref not available');
+        }
+      }, 1600); // Slightly after the flyTo animation (1.5s)
+    } else {
+      if (eventToShow) {
+        console.log('⚠️ Event to show:', eventToShow);
+        console.log('⚠️ Has location?', !!eventToShow.location);
+        console.log('⚠️ Map instance?', !!mapInstance);
+      }
+    }
+  }, [eventToShow, mapInstance]);
 
   const loadPoints = async () => {
     try {
@@ -193,6 +242,28 @@ const RegionMap = ({ region, selectedCategories = [] }) => {
     if (selectedPoint) {
       // Refresh reviews if modal is open
       handleViewReviews(selectedPoint);
+    }
+  };
+
+  const handleToggleFavorite = async (pointId) => {
+    if (!user) {
+      alert('Please log in to add favorites');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const isFavorite = favoritePoints.includes(pointId);
+      if (isFavorite) {
+        await removeFromFavorites(pointId);
+        setFavoritePoints(prev => prev.filter(id => id !== pointId));
+      } else {
+        await addToFavorites(pointId);
+        setFavoritePoints(prev => [...prev, pointId]);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+      alert(err.response?.data?.message || 'Failed to update favorite');
     }
   };
 
@@ -470,6 +541,18 @@ const RegionMap = ({ region, selectedCategories = [] }) => {
                   {/* Action Buttons */}
                   <div className="popup-actions-professional">
                     <button 
+                      className={`popup-btn-pro popup-btn-favorite ${favoritePoints.includes(point._id) ? 'is-favorite' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleFavorite(point._id);
+                      }}
+                      title={favoritePoints.includes(point._id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <span className="material-symbols-outlined">
+                        {favoritePoints.includes(point._id) ? 'favorite' : 'favorite_border'}
+                      </span>
+                    </button>
+                    <button 
                       className="popup-btn-pro popup-btn-primary-pro"
                       onClick={() => handleWriteReview(point)}
                     >
@@ -486,6 +569,39 @@ const RegionMap = ({ region, selectedCategories = [] }) => {
               </Popup>
             </Marker>
           ))}
+
+          {/* Event marker - temporary highlight when viewing event */}
+          {eventToShow && eventToShow.location && (
+            <Marker
+              ref={eventMarkerRef}
+              position={[eventToShow.location.lat, eventToShow.location.lng]}
+              icon={L.divIcon({
+                className: 'custom-event-marker',
+                html: `
+                  <div class="event-marker-highlight">
+                    <span class="material-symbols-outlined">location_on</span>
+                  </div>
+                `,
+                iconSize: [48, 48],
+                iconAnchor: [24, 48],
+                popupAnchor: [0, -48]
+              })}
+            >
+              <Popup autoClose={false} closeOnClick={false}>
+                <div style={{ textAlign: 'center', padding: '10px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>{eventToShow.title}</h3>
+                  <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+                    {new Date(eventToShow.startDate || eventToShow.date).toLocaleDateString()}
+                  </p>
+                  {eventToShow.cost && (
+                    <p style={{ margin: '4px 0 0 0', color: '#667eea', fontWeight: '600', fontSize: '14px' }}>
+                      {eventToShow.cost}
+                    </p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          )}
         </MapContainer>
 
         {/* Floating Action Button */}

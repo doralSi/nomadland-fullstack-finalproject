@@ -50,11 +50,16 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.header-left {
+  flex: 1;
 }
 
 .point-details-header h1 {
   color: #2c3e50;
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   font-size: 2rem;
 }
 
@@ -65,6 +70,47 @@
   border-radius: 20px;
   font-size: 0.9rem;
   text-transform: capitalize;
+  display: inline-block;
+}
+
+.btn-favorite {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 2px solid #ef4444;
+  border-radius: 24px;
+  color: #ef4444;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-favorite:hover {
+  background: #fef2f2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.btn-favorite.favorite-active {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-favorite.favorite-active:hover {
+  background: #dc2626;
+}
+
+.btn-favorite:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-favorite .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .point-details-description {

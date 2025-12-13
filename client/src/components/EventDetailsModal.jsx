@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { useAuth } from '../context/AuthContext';
+import axios from '../api/axiosInstance';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './EventDetailsModal.css';
@@ -13,8 +15,91 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const EventDetailsModal = ({ event, onClose, onShowOnMap, region }) => {
+const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted }) => {
+  const { user } = useAuth();
+  const [deleting, setDeleting] = useState(false);
+  const [rsvpCount, setRsvpCount] = useState(event.rsvps?.length || 0);
+  const [hasRSVPd, setHasRSVPd] = useState(
+    user && event.rsvps?.some(rsvp => rsvp.user?._id === user.id || rsvp.user === user.id)
+  );
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+
   if (!event) return null;
+
+  console.log('EventDetailsModal - event:', event);
+  console.log('EventDetailsModal - region:', region);
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await axios.delete(`/events/${event.templateId || event._id}`);
+      alert('Event deleted successfully');
+      if (onEventDeleted) {
+        onEventDeleted();
+      }
+      onClose();
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert(err.response?.data?.message || 'Failed to delete event');
+      setDeleting(false);
+    }
+  };
+
+  const isOwner = user && event.createdBy && event.createdBy._id === user.id;
+  const isAdmin = user && user.role === 'admin';
+  const canDelete = isOwner || isAdmin;
+
+  const handleRSVP = async () => {
+    if (!user) {
+      alert('Please login to RSVP');
+      return;
+    }
+
+    try {
+      setRsvpLoading(true);
+      const templateId = event.templateId || event._id;
+      
+      if (hasRSVPd) {
+        await axios.delete(`/events/${templateId}/rsvp`);
+        setRsvpCount(prev => prev - 1);
+        setHasRSVPd(false);
+      } else {
+        await axios.post(`/events/${templateId}/rsvp`);
+        setRsvpCount(prev => prev + 1);
+        setHasRSVPd(true);
+      }
+    } catch (err) {
+      console.error('RSVP error:', err);
+      alert(err.response?.data?.message || 'Failed to update RSVP');
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
+
+  const handleShare = (platform) => {
+    const eventUrl = window.location.origin + `/event/${event.templateId || event._id}`;
+    const title = event.title;
+    const description = event.description;
+
+    switch (platform) {
+      case 'link':
+        navigator.clipboard.writeText(eventUrl);
+        alert('Link copied to clipboard!');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + eventUrl)}`;
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(title + '\n' + eventUrl)}`, '_blank');
+        break;
+      default:
+        break;
+    }
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -40,109 +125,108 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="event-details-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header with Image Background */}
-        {event.imageUrl ? (
-          <div className="event-modal-hero" style={{ backgroundImage: `url(${event.imageUrl})` }}>
-            <div className="event-modal-hero-overlay">
-              <button className="modal-close-btn-top" onClick={onClose}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-              <h1 className="event-hero-title">{event.title}</h1>
-            </div>
-          </div>
-        ) : (
-          <div className="event-modal-header-simple">
-            <h2>{event.title}</h2>
-            <button className="modal-close-btn" onClick={onClose}>
-              <span className="material-symbols-outlined">close</span>
-            </button>
+        {/* Close Button */}
+        <button className="modal-close-btn-top" onClick={onClose}>
+          <span className="material-symbols-outlined">close</span>
+        </button>
+
+        {/* Delete Button - Only for owner or admin */}
+        {canDelete && (
+          <button 
+            className="modal-delete-btn-top" 
+            onClick={handleDelete}
+            disabled={deleting}
+            title="Delete event"
+          >
+            <span className="material-symbols-outlined">delete</span>
+          </button>
+        )}
+
+        {/* Hero Image */}
+        {event.imageUrl && (
+          <div className="event-modal-image">
+            <img src={event.imageUrl} alt={event.title} />
           </div>
         )}
 
         {/* Content */}
         <div className="event-modal-content">
+          {/* Title - Centered */}
+          <h1 className="event-modal-title">{event.title}</h1>
 
-          {/* Event Details */}
-          <div className="event-details-grid">
-            {/* Date & Time */}
-            <div className="event-detail-item">
+          {/* Event Details - Full Width Rows */}
+          <div className="event-details-list">
+            {/* Date */}
+            <div className="event-detail-row">
               <div className="detail-icon">
                 <span className="material-symbols-outlined">event</span>
               </div>
-              <div className="detail-content">
-                <div className="detail-label">Date</div>
-                <div className="detail-value">
-                  {formatDate(event.date || event.startDate)}
-                </div>
+              <div className="detail-label">Date</div>
+              <div className="detail-value">
+                {formatDate(event.date || event.startDate)}
+                {event.endDate && event.startDate !== event.endDate && 
+                  ` - ${formatDate(event.endDate)}`}
               </div>
             </div>
 
-            {event.time && (
-              <div className="event-detail-item">
+            {/* All Day Event Badge */}
+            {event.isAllDay && (
+              <div className="event-detail-row">
+                <div className="detail-icon">
+                  <span className="material-symbols-outlined">today</span>
+                </div>
+                <div className="detail-label">Duration</div>
+                <div className="detail-value">All-day event</div>
+              </div>
+            )}
+
+            {/* Time and Duration */}
+            {!event.isAllDay && event.time && (
+              <div className="event-detail-row">
                 <div className="detail-icon">
                   <span className="material-symbols-outlined">schedule</span>
                 </div>
-                <div className="detail-content">
-                  <div className="detail-label">Time</div>
-                  <div className="detail-value">{formatTime(event.time)}</div>
+                <div className="detail-label">Time</div>
+                <div className="detail-value">
+                  {formatTime(event.time)}
+                  {event.duration && ` (${event.duration} ${event.duration === 1 ? 'hour' : 'hours'})`}
                 </div>
               </div>
             )}
 
             {/* Cost */}
             {event.cost && (
-              <div className="event-detail-item">
+              <div className="event-detail-row">
                 <div className="detail-icon">
                   <span className="material-symbols-outlined">payments</span>
                 </div>
-                <div className="detail-content">
-                  <div className="detail-label">Cost</div>
-                  <div className="detail-value">{event.cost}</div>
-                </div>
-              </div>
-            )}
-
-            {/* Location */}
-            {event.location && (
-              <div className="event-detail-item">
-                <div className="detail-icon">
-                  <span className="material-symbols-outlined">place</span>
-                </div>
-                <div className="detail-content">
-                  <div className="detail-label">Location</div>
-                  <div className="detail-value">
-                    {event.location.name || `${event.location.lat.toFixed(4)}, ${event.location.lng.toFixed(4)}`}
-                  </div>
-                </div>
+                <div className="detail-label">Cost</div>
+                <div className="detail-value">{event.cost}</div>
               </div>
             )}
 
             {/* Region */}
             {(region || event.region) && (
-              <div className="event-detail-item">
+              <div className="event-detail-row">
                 <div className="detail-icon">
                   <span className="material-symbols-outlined">map</span>
                 </div>
-                <div className="detail-content">
-                  <div className="detail-label">Region</div>
-                  <div className="detail-value">
-                    {region?.name || event.region?.name || 'Unknown'}
-                  </div>
+                <div className="detail-label">Region</div>
+                <div className="detail-value">
+                  {region?.name || event.region?.name || 'Unknown'}
                 </div>
               </div>
             )}
 
             {/* Repeat */}
             {event.repeat && event.repeat !== 'none' && (
-              <div className="event-detail-item">
+              <div className="event-detail-row">
                 <div className="detail-icon">
                   <span className="material-symbols-outlined">repeat</span>
                 </div>
-                <div className="detail-content">
-                  <div className="detail-label">Repeats</div>
-                  <div className="detail-value">
-                    {event.repeat.charAt(0).toUpperCase() + event.repeat.slice(1)}
-                  </div>
+                <div className="detail-label">Repeats</div>
+                <div className="detail-value">
+                  {event.repeat.charAt(0).toUpperCase() + event.repeat.slice(1)}
                 </div>
               </div>
             )}
@@ -183,6 +267,53 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region }) => {
             </div>
           )}
 
+          {/* RSVP and Share Section */}
+          <div className="event-rsvp-share-section">
+            {/* RSVP */}
+            <div className="event-rsvp">
+              <button 
+                className={`rsvp-btn ${hasRSVPd ? 'active' : ''}`}
+                onClick={handleRSVP}
+                disabled={rsvpLoading || !user}
+                title={!user ? 'Login to RSVP' : hasRSVPd ? 'Cancel RSVP' : 'RSVP to this event'}
+              >
+                <span className="material-symbols-outlined">
+                  {hasRSVPd ? 'check_circle' : 'person_add'}
+                </span>
+                <span className="rsvp-count">{rsvpCount}</span>
+              </button>
+              <span className="rsvp-label">
+                {hasRSVPd ? 'You\'re going!' : 'RSVP'}
+              </span>
+            </div>
+
+            {/* Share Buttons */}
+            <div className="event-share">
+              <span className="share-label">Share:</span>
+              <button 
+                className="share-btn"
+                onClick={() => handleShare('link')}
+                title="Copy link"
+              >
+                <span className="material-symbols-outlined">link</span>
+              </button>
+              <button 
+                className="share-btn"
+                onClick={() => handleShare('email')}
+                title="Share via email"
+              >
+                <span className="material-symbols-outlined">mail</span>
+              </button>
+              <button 
+                className="share-btn whatsapp"
+                onClick={() => handleShare('whatsapp')}
+                title="Share via WhatsApp"
+              >
+                <span className="material-symbols-outlined">chat</span>
+              </button>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="event-modal-actions">
             {event.location && onShowOnMap && (
@@ -213,7 +344,7 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region }) => {
             {event.createdBy && (
               <div className="event-creator-info">
                 <span className="material-symbols-outlined">person</span>
-                <span>Created by {event.createdBy.username || 'Community Member'}</span>
+                <span>Created by {event.createdBy.username || event.createdBy.email || 'Community Member'}</span>
               </div>
             )}
             {event.createdAt && (
@@ -231,6 +362,7 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region }) => {
 EventDetailsModal.propTypes = {
   event: PropTypes.shape({
     _id: PropTypes.string,
+    templateId: PropTypes.string,
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
     imageUrl: PropTypes.string,
@@ -250,12 +382,26 @@ EventDetailsModal.propTypes = {
       slug: PropTypes.string
     }),
     createdBy: PropTypes.shape({
-      username: PropTypes.string
+      _id: PropTypes.string,
+      username: PropTypes.string,
+      email: PropTypes.string
     }),
+    rsvps: PropTypes.arrayOf(PropTypes.shape({
+      user: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          _id: PropTypes.string,
+          username: PropTypes.string,
+          email: PropTypes.string
+        })
+      ]),
+      date: PropTypes.string
+    })),
     createdAt: PropTypes.string
   }),
   onClose: PropTypes.func.isRequired,
   onShowOnMap: PropTypes.func,
+  onEventDeleted: PropTypes.func,
   region: PropTypes.object
 };
 

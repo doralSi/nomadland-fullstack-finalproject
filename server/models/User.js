@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  favoritePoints: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Point'
+  }],
 });
 
 // Helper method to check if user is mapRanger or admin

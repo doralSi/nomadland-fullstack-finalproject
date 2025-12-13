@@ -18,3 +18,20 @@ export const authMiddleware = (req, res, next) => {
         res.status(401).json({ message: "Token is invalid or expired" });
     }
 };
+
+// Optional auth - allows both authenticated and unauthenticated requests
+export const optionalAuthMiddleware = (req, res, next) => {
+    try {
+        const token = req.header("Authorization")?.replace("Bearer ", "");
+
+        if (token) {
+            const verified = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = verified;
+        }
+        
+        next();
+    } catch (err) {
+        // If token is invalid, just continue without user
+        next();
+    }
+};

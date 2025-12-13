@@ -22,6 +22,7 @@ const RegionPage = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [eventToShowOnMap, setEventToShowOnMap] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -48,10 +49,11 @@ const RegionPage = () => {
 
   const loadEvents = async () => {
     try {
-      // Get events for the next 30 days
+      // Get events for the entire year to support calendar navigation
       const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 1); // Start from last month
       const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30);
+      endDate.setFullYear(endDate.getFullYear() + 1); // End one year from now
       
       const data = await getEvents(null, startDate.toISOString(), endDate.toISOString());
       // Filter events for this region based on location
@@ -80,14 +82,17 @@ const RegionPage = () => {
 
   const handleShowEventOnMap = (event) => {
     setShowEventDetails(false);
+    setEventToShowOnMap(event);
     
     // Scroll to map
     if (mapRef.current) {
       mapRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    
-    // Optional: Add logic to zoom/highlight on map
-    // This would require passing the event location to RegionMap
+
+    // Clear the event highlight after 5 seconds
+    setTimeout(() => {
+      setEventToShowOnMap(null);
+    }, 5000);
   };
 
   const handleAddEvent = () => {
@@ -141,7 +146,11 @@ const RegionPage = () => {
       />
 
       <div ref={mapRef}>
-        <RegionMap region={currentRegion} selectedCategories={selectedCategories} />
+        <RegionMap 
+          region={currentRegion} 
+          selectedCategories={selectedCategories}
+          eventToShow={eventToShowOnMap}
+        />
       </div>
 
       <CalendarView
@@ -157,6 +166,7 @@ const RegionPage = () => {
           region={currentRegion}
           onClose={() => setShowEventDetails(false)}
           onShowOnMap={handleShowEventOnMap}
+          onEventDeleted={loadEvents}
         />
       )}
 

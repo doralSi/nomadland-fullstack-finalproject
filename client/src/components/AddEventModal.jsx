@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
 import { createEvent } from '../api/events';
 import { isPointInsidePolygon, polygonToLeafletFormat } from '../utils/isInsidePolygon';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './AddEventModal.css';
@@ -39,6 +39,8 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
     endDate: '',
     hour: '12',
     minute: '00',
+    duration: '1',
+    isAllDay: false,
     repeat: 'none',
     lat: centerCoords[0] || '',
     lng: centerCoords[1] || ''
@@ -61,9 +63,10 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
   console.log('centerCoords:', centerCoords);
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
@@ -94,7 +97,7 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const response = await axios.post('http://localhost:5000/api/upload/image', formData, {
+      const response = await axiosInstance.post('/upload/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -148,6 +151,9 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
     setError('');
     setLoading(true);
 
+    console.log('🚀 Starting event creation...');
+    console.log('Form data:', formData);
+
     try {
       // Validate dates
       const start = new Date(formData.startDate);
@@ -168,16 +174,21 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
 
       let imageUrl = '';
       if (imageFile) {
+        console.log('📤 Uploading image...');
         try {
           imageUrl = await uploadImage();
+          console.log('✅ Image uploaded:', imageUrl);
         } catch (err) {
+          console.error('❌ Image upload failed:', err);
           setError('Failed to upload image. Please try again.');
           setLoading(false);
           return;
         }
       }
 
-      const time = `${formData.hour}:${formData.minute}`;
+      // Multi-day events or all-day events don't need time
+      const isMultiDay = formData.startDate !== formData.endDate;
+      const time = (formData.isAllDay || isMultiDay) ? null : `${formData.hour}:00`;
 
       const eventData = {
         title: formData.title,
@@ -186,6 +197,8 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
         startDate: formData.startDate,
         endDate: formData.endDate,
         time: time,
+        duration: (formData.isAllDay || isMultiDay) ? null : parseInt(formData.duration),
+        isAllDay: formData.isAllDay || isMultiDay,
         repeat: formData.repeat,
         location: {
           lat: parseFloat(formData.lat),
@@ -196,9 +209,13 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
         imageUrl: imageUrl
       };
 
-      await createEvent(eventData);
+      console.log('📝 Event data to send:', eventData);
+      const result = await createEvent(eventData);
+      console.log('✅ Event created successfully:', result);
       onSuccess();
     } catch (err) {
+      console.error('❌ Event creation failed:', err);
+      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to create event');
     } finally {
       setLoading(false);
@@ -300,40 +317,70 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
               />
             </div>
           </div>
-
-          <div className="form-row three-cols">
-            <div className="form-group">
-              <label htmlFor="hour">Hour *</label>
-              <select
-                id="hour"
-                name="hour"
-                value={formData.hour}
+{/* All Day Event Checkbox */}
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="isAllDay"
+                checked={formData.isAllDay}
                 onChange={handleChange}
-                required
-              >
-                {Array.from({ length: 24 }, (_, i) => {
-                  const hour = i.toString().padStart(2, '0');
-                  return <option key={hour} value={hour}>{hour}</option>;
-                })}
-              </select>
-            </div>
+              />
+              <span>All-day event (or multi-day event)</span>
+            </label>
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="minute">Minutes *</label>
-              <select
-                id="minute"
-                name="minute"
-                value={formData.minute}
-                onChange={handleChange}
-                required
-              >
-                <option value="00">00</option>
-                <option value="15">15</option>
-                <option value="30">30</option>
-                <option value="45">45</option>
-              </select>
-            </div>
+          {/* Time fields - only show if not all-day and single day */}
+          {!formData.isAllDay && formData.startDate === formData.endDate && (
+            <div className="form-row three-cols">
+              <div className="form-group">
+                <label htmlFor="hour">Start Hour *</label>
+                <select
+                  id="hour"
+                  name="hour"
+                  value={formData.hour}
+                  onChange={handleChange}
+                  required
+                >
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const hour = i.toString().padStart(2, '0');
+                    return <option key={hour} value={hour}>{hour}:00</option>;
+                  })}
+                </select>
+              </div>
 
+              <div className="form-group">
+                <label htmlFor="duration">Duration (hours) *</label>
+                <select
+                  id="duration"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  required
+                >
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const hours = i + 1;
+                    return <option key={hours} value={hours}>{hours} {hours === 1 ? 'hour' : 'hours'}</option>;
+                  })}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="cost">Cost</label>
+                <input
+                  type="text"
+                  id="cost"
+                  name="cost"
+                  value={formData.cost}
+                  onChange={handleChange}
+                  placeholder="e.g., Free, $10, ₪50"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Cost field for all-day events */}
+          {formData.isAllDay && (
             <div className="form-group">
               <label htmlFor="cost">Cost</label>
               <input
@@ -345,7 +392,7 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
                 placeholder="e.g., Free, $10, ₪50"
               />
             </div>
-          </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="repeat">Repeat</label>
@@ -420,7 +467,7 @@ const AddEventModal = ({ region, onClose, onSuccess }) => {
 
         <div className="modal-info">
           <span className="material-symbols-outlined">info</span>
-          <p>Your event will be reviewed by moderators before appearing publicly.</p>
+          <p>Your event will be published immediately after creation.</p>
         </div>
       </div>
     </div>

@@ -28,6 +28,10 @@ const pointSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
   language: {
     type: String,
     enum: ['he', 'en'],

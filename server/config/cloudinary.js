@@ -1,4 +1,9 @@
 import pkg from "cloudinary";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
 const { v2: cloudinary } = pkg;
 
 cloudinary.config({

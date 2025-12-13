@@ -7,13 +7,21 @@ import {
   updatePersonalMap,
   deletePersonalMap,
   addPointToMap,
-  removePointFromMap
+  removePointFromMap,
+  getUserRegions,
+  getUserPointsInRegion
 } from '../controllers/personalMapController.js';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// Get regions where user has points
+router.get('/regions', getUserRegions);
+
+// Get user's points in a specific region
+router.get('/regions/:regionSlug', getUserPointsInRegion);
 
 // Create a new personal map
 router.post('/', createPersonalMap);
