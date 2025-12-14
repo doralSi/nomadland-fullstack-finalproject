@@ -44,8 +44,20 @@ export const createReview = async (req, res) => {
     const { text, ratingOverall, ratingPrice, ratingAccessibilityArrival, ratingAccessibilityDisability, language } = req.body;
     const userId = req.user.id;
 
+    console.log('📝 Create review request:', {
+      pointId,
+      text,
+      ratingOverall,
+      ratingPrice,
+      ratingAccessibilityArrival,
+      ratingAccessibilityDisability,
+      language,
+      userId
+    });
+
     // Validate required fields
     if (!text || !ratingOverall || !ratingPrice || !ratingAccessibilityArrival || !ratingAccessibilityDisability) {
+      console.log('❌ Validation failed - missing fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -108,6 +120,12 @@ export const getReviewsForPoint = async (req, res) => {
     const reviews = await Review.find({ pointId })
       .populate('userId', 'name email')
       .sort({ createdAt: -1 });
+
+    console.log('Reviews fetched:', reviews.length);
+    console.log('Sample review:', reviews[0] ? { 
+      userId: reviews[0].userId, 
+      text: reviews[0].text?.substring(0, 30) 
+    } : 'No reviews');
 
     res.json(reviews);
   } catch (error) {

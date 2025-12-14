@@ -66,56 +66,54 @@ const ReviewList = ({ reviews, currentUserId, isAdmin, onReviewDeleted }) => {
         const canDelete = isOwner || isAdmin;
 
         return (
-          <div key={review._id} className="review-card">
-            <div className="review-header">
-              <div className="reviewer-info">
-                <div className="reviewer-avatar">
-                  {review.userId?.username?.[0]?.toUpperCase() || '?'}
+          <div key={review._id} className="review-card-compact">
+            <div className="review-header-compact">
+              <div className="reviewer-info-compact">
+                <div className="reviewer-avatar-compact">
+                  {review.userId?.name?.[0]?.toUpperCase() || '?'}
                 </div>
-                <div className="reviewer-details">
-                  <h4 className="reviewer-name">
-                    {review.userId?.username || 'Anonymous'}
+                <div className="reviewer-details-compact">
+                  <h4 className="reviewer-name-compact">
+                    {review.userId?.name || 'Anonymous'}
                   </h4>
-                  <span className="review-date">{formatDate(review.createdAt)}</span>
+                  <span className="review-date-compact">{formatDate(review.createdAt)}</span>
                 </div>
               </div>
               
               {canDelete && (
                 <button
                   onClick={() => handleDelete(review._id)}
-                  className="delete-btn"
+                  className="delete-btn-compact"
                   disabled={deletingId === review._id}
                   aria-label="Delete review"
                 >
-                  {deletingId === review._id ? '...' : '🗑️'}
+                  <span className="material-symbols-outlined">delete</span>
                 </button>
               )}
             </div>
 
-            <div className="review-ratings">
-              <div className="rating-item">
-                <span className="rating-label">⭐ Overall:</span>
-                {renderStars(review.ratingOverall)}
-                <span className="rating-number">{review.ratingOverall}/5</span>
+            <div className="review-ratings-inline">
+              <div className="rating-inline-item">
+                <span className="material-symbols-outlined">star</span>
+                <span className="rating-value-inline">{review.ratingOverall}</span>
               </div>
-              <div className="rating-item">
-                <span className="rating-label">💰 Price:</span>
-                {renderStars(review.ratingPrice)}
-                <span className="rating-number">{review.ratingPrice}/5</span>
+              <div className="rating-inline-item">
+                <span className="material-symbols-outlined">payments</span>
+                <span className="rating-value-inline">{review.ratingPrice}</span>
               </div>
-              <div className="rating-item">
-                <span className="rating-label">🚗 Arrival:</span>
-                {renderStars(review.ratingAccessibilityArrival)}
-                <span className="rating-number">{review.ratingAccessibilityArrival}/5</span>
+              <div className="rating-inline-item">
+                <span className="material-symbols-outlined">directions_car</span>
+                <span className="rating-value-inline">{review.ratingAccessibilityArrival}</span>
               </div>
-              <div className="rating-item">
-                <span className="rating-label">♿ Disability:</span>
-                {renderStars(review.ratingAccessibilityDisability)}
-                <span className="rating-number">{review.ratingAccessibilityDisability}/5</span>
+              <div className="rating-inline-item">
+                <span className="material-symbols-outlined">accessible</span>
+                <span className="rating-value-inline">{review.ratingAccessibilityDisability}</span>
               </div>
             </div>
 
-            <p className="review-text">{review.text}</p>
+            {review.text && (
+              <p className="review-text-compact">{review.text}</p>
+            )}
           </div>
         );
       })}

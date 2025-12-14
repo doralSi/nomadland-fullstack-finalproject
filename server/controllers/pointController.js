@@ -70,6 +70,7 @@ export const getPoints = async (req, res) => {
     
     const points = await Point.find(filter)
       .populate('createdBy', 'username email')
+      .populate('reviewCount')
       .sort({ createdAt: -1 });
 
     res.json(points);
@@ -83,7 +84,8 @@ export const getPoints = async (req, res) => {
 export const getPointById = async (req, res) => {
   try {
     const point = await Point.findById(req.params.id)
-      .populate('createdBy', 'username email');
+      .populate('createdBy', 'username email')
+      .populate('reviewCount');
 
     if (!point) {
       return res.status(404).json({ message: 'Point not found' });

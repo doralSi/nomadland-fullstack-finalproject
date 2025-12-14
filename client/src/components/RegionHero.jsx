@@ -1,7 +1,7 @@
 import React from 'react';
 import './RegionHero.css';
 
-const RegionHero = ({ name, subtitle, imageUrl, about, onBackClick }) => {
+const RegionHero = ({ name, subtitle, imageUrl, about, onBackClick, buttonText = 'All Regions' }) => {
   return (
     <div className="region-hero">
       {imageUrl ? (
@@ -15,7 +15,7 @@ const RegionHero = ({ name, subtitle, imageUrl, about, onBackClick }) => {
       
       <button onClick={onBackClick} className="back-to-regions-btn">
         <span className="material-symbols-outlined">arrow_back</span>
-        All Regions
+        {buttonText}
       </button>
       
       <div className="region-hero-content">

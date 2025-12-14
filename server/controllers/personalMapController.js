@@ -329,12 +329,16 @@ export const getUserPointsInRegion = async (req, res) => {
 
     // Get all user's created points
     const createdPoints = await Point.find({ createdBy: userId })
-      .populate('createdBy', 'name email');
+      .populate('createdBy', 'name email')
+      .populate('reviewCount');
 
     // Get user's favorite points
     const user = await User.findById(userId).populate({
       path: 'favoritePoints',
-      populate: { path: 'createdBy', select: 'name email' }
+      populate: [
+        { path: 'createdBy', select: 'name email' },
+        { path: 'reviewCount' }
+      ]
     });
     const favoritePoints = user.favoritePoints || [];
 
@@ -342,7 +346,10 @@ export const getUserPointsInRegion = async (req, res) => {
     const userReviews = await Review.find({ userId })
       .populate({
         path: 'pointId',
-        populate: { path: 'createdBy', select: 'name email' }
+        populate: [
+          { path: 'createdBy', select: 'name email' },
+          { path: 'reviewCount' }
+        ]
       });
     
     // Create map of point reviews for easy lookup
@@ -385,7 +392,8 @@ export const getUserPointsInRegion = async (req, res) => {
         slug: region.slug,
         center: region.center,
         zoom: region.zoom,
-        polygon: region.polygon
+        polygon: region.polygon,
+        heroImageUrl: region.heroImageUrl
       },
       createdPoints: createdInRegion,
       favoritePoints: favoritesInRegion,

@@ -95,10 +95,10 @@ const ReviewForm = ({ pointId, onReviewAdded, onCancel, requiredLanguage = 'he' 
         <div className="ratings-section">
           <h4>Rate Your Experience</h4>
           
-          {renderStarRating('ratingOverall', formData.ratingOverall, '⭐ Overall Rating *')}
-          {renderStarRating('ratingPrice', formData.ratingPrice, '💰 Price Level *')}
-          {renderStarRating('ratingAccessibilityArrival', formData.ratingAccessibilityArrival, '🚗 Accessibility (Arrival) *')}
-          {renderStarRating('ratingAccessibilityDisability', formData.ratingAccessibilityDisability, '♿ Accessibility (Disability) *')}
+          {renderStarRating('ratingOverall', formData.ratingOverall, <><span className="material-symbols-outlined rating-label-icon">star</span> Overall Rating *</>)}
+          {renderStarRating('ratingPrice', formData.ratingPrice, <><span className="material-symbols-outlined rating-label-icon">payments</span> Price Level *</>)}
+          {renderStarRating('ratingAccessibilityArrival', formData.ratingAccessibilityArrival, <><span className="material-symbols-outlined rating-label-icon">directions_car</span> Accessibility (Arrival) *</>)}
+          {renderStarRating('ratingAccessibilityDisability', formData.ratingAccessibilityDisability, <><span className="material-symbols-outlined rating-label-icon">accessible</span> Accessibility (Disability) *</>)}
         </div>
 
         <div className="form-actions">

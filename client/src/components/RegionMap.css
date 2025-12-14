@@ -375,6 +375,29 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Selected marker - highlighted and larger */
+.map-marker.selected-marker {
+  width: 48px;
+  height: 48px;
+  transform: scale(1);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3), 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 3px solid white;
+  animation: selectedPulse 2s infinite;
+}
+
+.map-marker.selected-marker .material-symbols-outlined {
+  font-size: 26px;
+}
+
+@keyframes selectedPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3), 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(102, 126, 234, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+}
+
 .map-marker .material-symbols-outlined {
   color: white;
   font-size: 18px;
@@ -1052,6 +1075,7 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  position: relative;
 }
 
 .review-avatar {
@@ -1073,6 +1097,7 @@
 .review-author-details {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .review-author-name {
@@ -1086,6 +1111,29 @@
   font-size: 13px;
   color: #777;
   margin-top: 2px;
+}
+
+.review-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.review-delete-btn:hover {
+  background: #fee;
+  color: #e74c3c;
+}
+
+.review-delete-btn .material-symbols-outlined {
+  font-size: 20px;
 }
 
 /* Stats Row */

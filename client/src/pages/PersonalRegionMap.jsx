@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { getUserPointsInRegion } from '../api/personalMaps';
 import { deletePoint, updatePoint, removeFromFavorites } from '../api/points';
 import { useAuth } from '../context/AuthContext';
 import { CATEGORIES } from '../constants/categories';
+import PointSidePanel from '../components/PointSidePanel';
+import RegionHero from '../components/RegionHero';
 import axiosInstance from '../api/axiosInstance';
 import './PersonalRegionMap.css';
 
@@ -16,7 +18,7 @@ const getCategoryIcon = (categoryKey) => {
 };
 
 // Create custom DivIcon for points
-const createPointIcon = (categoryKey, pointType) => {
+const createPointIcon = (categoryKey, pointType, isSelected = false) => {
   const iconName = getCategoryIcon(categoryKey);
   const typeClass = pointType === 'private' ? 'private-point' : 
                     pointType === 'favorite' ? 'favorite-point' : 
@@ -25,12 +27,12 @@ const createPointIcon = (categoryKey, pointType) => {
   return L.divIcon({
     className: 'custom-div-icon',
     html: `
-      <div class="map-marker category-${categoryKey} ${typeClass}">
+      <div class="map-marker category-${categoryKey} ${typeClass} ${isSelected ? 'selected-marker' : ''}">
         <span class="material-symbols-outlined">${iconName}</span>
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: isSelected ? [48, 48] : [32, 32],
+    iconAnchor: isSelected ? [24, 48] : [16, 32],
     popupAnchor: [0, -32]
   });
 };
@@ -58,6 +60,8 @@ const PersonalRegionMap = () => {
   const [error, setError] = useState(null);
   const [editingPoint, setEditingPoint] = useState(null);
   const [editingReview, setEditingReview] = useState(null);
+  const [selectedPoint, setSelectedPoint] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
 
   useEffect(() => {
     if (user && regionSlug) {
@@ -197,42 +201,61 @@ const PersonalRegionMap = () => {
 
   return (
     <div className="personal-region-map-container">
-      <div className="map-header">
-        <button onClick={() => navigate('/me/maps')} className="btn-back">
-          <span className="material-symbols-outlined">arrow_back</span>
-          Back to My Maps
-        </button>
-        <h1>{region.name}</h1>
-        <div className="legend">
-          <div className="legend-item">
-            <div className="legend-icon" style={{ backgroundColor: '#10b981' }}></div>
-            <span>Public Points ({createdPoints.filter(p => !p.isPrivate).length})</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-icon" style={{ backgroundColor: '#3b82f6' }}></div>
-            <span>Private Points ({createdPoints.filter(p => p.isPrivate).length})</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-icon" style={{ backgroundColor: '#ef4444' }}></div>
-            <span>Favorites ({favoritePoints.length})</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-icon" style={{ backgroundColor: '#f59e0b' }}></div>
-            <span>Reviewed ({reviewedPoints.length})</span>
+      {/* Hero Section */}
+      <RegionHero 
+        name={region.name}
+        subtitle="Personal Map"
+        imageUrl={region.heroImageUrl}
+        onBackClick={() => navigate(-1)}
+        buttonText="My Maps"
+      />
+
+      {/* Map Section */}
+      <div className="region-map-section">
+        {/* Legend - single line above map */}
+        <div className="map-header-with-legend">
+          <div className="legend-container-inline">
+            <div className="legend">
+              <div className="legend-item">
+                <div className="legend-icon public-icon">
+                  <span className="material-symbols-outlined">public</span>
+                </div>
+                <span>Public</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-icon private-icon">
+                  <span className="material-symbols-outlined">lock</span>
+                </div>
+                <span>Private</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-icon favorite-icon">
+                  <span className="material-symbols-outlined">favorite</span>
+                </div>
+                <span>Favorites</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-icon reviewed-icon">
+                  <span className="material-symbols-outlined">rate_review</span>
+                </div>
+                <span>Reviewed</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="map-wrapper">
-        <MapContainer
-          center={[region.center.lat, region.center.lng]}
-          zoom={region.zoom}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          />
+        {/* Map Container */}
+        <div className="region-map-container">
+          <MapContainer
+            center={[region.center.lat, region.center.lng]}
+            zoom={region.zoom}
+            className="region-leaflet-map"
+            scrollWheelZoom={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
           <MapViewController center={region.center} zoom={region.zoom} />
 
           {/* Region polygon */}
@@ -251,255 +274,76 @@ const PersonalRegionMap = () => {
           {/* Render created points */}
           {createdPoints.map((point) => {
             const pointType = point.isPrivate ? 'private' : 'public';
+            const isSelected = selectedPoint?._id === point._id;
             return (
               <Marker
                 key={`created-${point._id}`}
                 position={[point.lat, point.lng]}
-                icon={createPointIcon(point.category, pointType)}
-              >
-                <Popup maxWidth={340} className="professional-popup">
-                  <div className="point-popup-professional">
-                    {point.category && (
-                      <div className="popup-category-badge">
-                        <span className="material-symbols-outlined">
-                          {CATEGORIES.find(cat => cat.key === point.category)?.materialIcon || 'place'}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <div className="popup-title-section">
-                      <h3 className="popup-title">{point.title}</h3>
-                      {point.category && (
-                        <p className="popup-subtitle">
-                          {CATEGORIES.find(cat => cat.key === point.category)?.label || 'Location'}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="popup-stats-section">
-                      <div className="popup-stat-item">
-                        <span className="material-symbols-outlined">star</span>
-                        <span className="stat-value">{point.averageRating ? point.averageRating.toFixed(1) : '0'}</span>
-                        <span className="stat-label">Rating</span>
-                      </div>
-                      <div className="popup-stat-item">
-                        <span className="material-symbols-outlined">payments</span>
-                        <span className="stat-value">{point.averagePriceLevel ? point.averagePriceLevel.toFixed(1) : '0'}</span>
-                        <span className="stat-label">Price</span>
-                      </div>
-                      <div className="popup-stat-item">
-                        <span className="material-symbols-outlined">directions_car</span>
-                        <span className="stat-value">{point.averageAccessibilityArrival ? point.averageAccessibilityArrival.toFixed(1) : '0'}</span>
-                        <span className="stat-label">Difficulty</span>
-                      </div>
-                      <div className="popup-stat-item">
-                        <span className="material-symbols-outlined">accessible</span>
-                        <span className="stat-value">{point.averageAccessibilityDisability ? point.averageAccessibilityDisability.toFixed(1) : '0'}</span>
-                        <span className="stat-label">Access</span>
-                      </div>
-                    </div>
-                    
-                    <div className="popup-review-count-badge">
-                      <span className="material-symbols-outlined">rate_review</span>
-                      <span>{getReviewCount(point)} reviews</span>
-                    </div>
-
-                    {point.isPrivate && (
-                      <div className="popup-type-badge private">
-                        <span className="material-symbols-outlined">lock</span>
-                        Private Point
-                      </div>
-                    )}
-                    
-                    <div className="popup-actions-professional">
-                      {point.isPrivate && (
-                        <>
-                          <button 
-                            className="popup-btn-pro popup-btn-edit"
-                            onClick={() => setEditingPoint(point)}
-                          >
-                            <span className="material-symbols-outlined">edit</span>
-                            Edit
-                          </button>
-                          <button 
-                            className="popup-btn-pro popup-btn-delete"
-                            onClick={() => handleDeletePoint(point._id)}
-                          >
-                            <span className="material-symbols-outlined">delete</span>
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
+                icon={createPointIcon(point.category, pointType, isSelected)}
+                eventHandlers={{
+                  click: () => setSelectedPoint(point)
+                }}
+              />
             );
           })}
 
           {/* Render favorite points */}
-          {favoritePoints.map((point) => (
-            <Marker
-              key={`favorite-${point._id}`}
-              position={[point.lat, point.lng]}
-              icon={createPointIcon(point.category, 'favorite')}
-            >
-              <Popup maxWidth={340} className="professional-popup">
-                <div className="point-popup-professional">
-                  {point.category && (
-                    <div className="popup-category-badge">
-                      <span className="material-symbols-outlined">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.materialIcon || 'place'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="popup-title-section">
-                    <h3 className="popup-title">{point.title}</h3>
-                    {point.category && (
-                      <p className="popup-subtitle">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.label || 'Location'}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="popup-stats-section">
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">star</span>
-                      <span className="stat-value">{point.averageRating ? point.averageRating.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Rating</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">payments</span>
-                      <span className="stat-value">{point.averagePriceLevel ? point.averagePriceLevel.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Price</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">directions_car</span>
-                      <span className="stat-value">{point.averageAccessibilityArrival ? point.averageAccessibilityArrival.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Difficulty</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">accessible</span>
-                      <span className="stat-value">{point.averageAccessibilityDisability ? point.averageAccessibilityDisability.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Access</span>
-                    </div>
-                  </div>
-                  
-                  <div className="popup-review-count-badge">
-                    <span className="material-symbols-outlined">rate_review</span>
-                    <span>{getReviewCount(point)} reviews</span>
-                  </div>
-
-                  <div className="popup-type-badge favorite">
-                    <span className="material-symbols-outlined">favorite</span>
-                    Favorite
-                  </div>
-                  
-                  <div className="popup-actions-professional">
-                    <button 
-                      className="popup-btn-pro popup-btn-remove-favorite"
-                      onClick={() => handleRemoveFromFavorites(point._id)}
-                    >
-                      <span className="material-symbols-outlined">heart_broken</span>
-                      Remove Favorite
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {favoritePoints.map((point) => {
+            const isSelected = selectedPoint?._id === point._id;
+            return (
+              <Marker
+                key={`favorite-${point._id}`}
+                position={[point.lat, point.lng]}
+                icon={createPointIcon(point.category, 'favorite', isSelected)}
+                eventHandlers={{
+                  click: () => setSelectedPoint(point)
+                }}
+              />
+            );
+          })}
 
           {/* Render reviewed points */}
-          {reviewedPoints.map((point) => (
-            <Marker
-              key={`reviewed-${point._id}`}
-              position={[point.lat, point.lng]}
-              icon={createPointIcon(point.category, 'reviewed')}
-            >
-              <Popup maxWidth={340} className="professional-popup">
-                <div className="point-popup-professional">
-                  {point.category && (
-                    <div className="popup-category-badge">
-                      <span className="material-symbols-outlined">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.materialIcon || 'place'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="popup-title-section">
-                    <h3 className="popup-title">{point.title}</h3>
-                    {point.category && (
-                      <p className="popup-subtitle">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.label || 'Location'}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="popup-stats-section">
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">star</span>
-                      <span className="stat-value">{point.averageRating ? point.averageRating.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Rating</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">payments</span>
-                      <span className="stat-value">{point.averagePriceLevel ? point.averagePriceLevel.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Price</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">directions_car</span>
-                      <span className="stat-value">{point.averageAccessibilityArrival ? point.averageAccessibilityArrival.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Difficulty</span>
-                    </div>
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">accessible</span>
-                      <span className="stat-value">{point.averageAccessibilityDisability ? point.averageAccessibilityDisability.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Access</span>
-                    </div>
-                  </div>
-                  
-                  <div className="popup-review-count-badge">
-                    <span className="material-symbols-outlined">rate_review</span>
-                    <span>{getReviewCount(point)} reviews</span>
-                  </div>
-
-                  {point.userReview && (
-                    <div className="user-review-section">
-                      <h4>Your Review</h4>
-                      <div className="review-stars">
-                        {'⭐'.repeat(point.userReview.rating)}
-                      </div>
-                      <p className="review-text">{point.userReview.comment}</p>
-                    </div>
-                  )}
-
-                  <div className="popup-type-badge reviewed">
-                    <span className="material-symbols-outlined">rate_review</span>
-                    You Reviewed This
-                  </div>
-                  
-                  <div className="popup-actions-professional">
-                    <button 
-                      className="popup-btn-pro popup-btn-edit-review"
-                      onClick={() => setEditingReview(point.userReview)}
-                    >
-                      <span className="material-symbols-outlined">edit</span>
-                      Edit Review
-                    </button>
-                    <button 
-                      className="popup-btn-pro popup-btn-delete-review"
-                      onClick={() => handleDeleteReview(point.userReview._id)}
-                    >
-                      <span className="material-symbols-outlined">delete</span>
-                      Delete Review
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {reviewedPoints.map((point) => {
+            const isSelected = selectedPoint?._id === point._id;
+            return (
+              <Marker
+                key={`reviewed-${point._id}`}
+                position={[point.lat, point.lng]}
+                icon={createPointIcon(point.category, 'reviewed', isSelected)}
+                eventHandlers={{
+                  click: () => setSelectedPoint(point)
+                }}
+              />
+            );
+          })}
         </MapContainer>
+
+        {/* Point Side Panel */}
+        {selectedPoint && (
+          <PointSidePanel
+            point={selectedPoint}
+            onClose={() => setSelectedPoint(null)}
+            onToggleFavorite={
+              favoritePoints.some(p => p._id === selectedPoint._id)
+                ? () => handleRemoveFromFavorites(selectedPoint._id)
+                : null
+            }
+            isFavorite={favoritePoints.some(p => p._id === selectedPoint._id)}
+            onDelete={
+              createdPoints.some(p => p._id === selectedPoint._id && p.isPrivate)
+                ? () => handleDeletePoint(selectedPoint._id)
+                : null
+            }
+            showOnlyUserReview={reviewedPoints.some(p => p._id === selectedPoint._id)}
+            userReviewId={reviewedPoints.find(p => p._id === selectedPoint._id)?.userReview?._id}
+            onDeleteReview={
+              reviewedPoints.some(p => p._id === selectedPoint._id)
+                ? () => handleDeleteReview(reviewedPoints.find(p => p._id === selectedPoint._id)?.userReview?._id)
+                : null
+            }
+          />
+        )}
+        </div>
       </div>
 
       {/* Edit Point Modal */}

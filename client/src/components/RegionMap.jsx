@@ -8,6 +8,7 @@ import { polygonToLeafletFormat, isPointInsideRegion } from '../utils/isInsidePo
 import { CATEGORIES } from '../constants/categories';
 import { useAuth } from '../context/AuthContext';
 import AddPointModal from './AddPointModal';
+import PointSidePanel from './PointSidePanel';
 import './RegionMap.css';
 
 // Helper function to get category icon
@@ -23,17 +24,17 @@ const getCategoryLabel = (categoryKey) => {
 };
 
 // Create custom DivIcon for points based on category
-const createPointIcon = (categoryKey) => {
+const createPointIcon = (categoryKey, isSelected = false) => {
   const iconName = getCategoryIcon(categoryKey);
   return L.divIcon({
     className: 'custom-div-icon',
     html: `
-      <div class="map-marker category-${categoryKey}">
+      <div class="map-marker category-${categoryKey} ${isSelected ? 'selected-marker' : ''}">
         <span class="material-symbols-outlined">${iconName}</span>
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: isSelected ? [48, 48] : [32, 32],
+    iconAnchor: isSelected ? [24, 48] : [16, 32],
     popupAnchor: [0, -32]
   });
 };
@@ -242,6 +243,35 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
     if (selectedPoint) {
       // Refresh reviews if modal is open
       handleViewReviews(selectedPoint);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        // Refresh reviews
+        if (selectedPoint) {
+          handleViewReviews(selectedPoint);
+        }
+        loadPoints(); // Refresh to get updated averages
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete review');
+      }
+    } catch (err) {
+      console.error('Failed to delete review:', err);
+      alert('Failed to delete review');
     }
   };
 
@@ -482,93 +512,22 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
             <Marker
               key={point._id}
               position={[point.lat, point.lng]}
-              icon={createPointIcon(point.category)}
-            >
-              <Popup maxWidth={340} className="professional-popup">
-                <div className="point-popup-professional">
-                  {/* Category Badge */}
-                  {point.category && (
-                    <div className="popup-category-badge">
-                      <span className="material-symbols-outlined">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.materialIcon || 'place'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Title Section */}
-                  <div className="popup-title-section">
-                    <h3 className="popup-title">{point.title}</h3>
-                    {point.category && (
-                      <p className="popup-subtitle">
-                        {CATEGORIES.find(cat => cat.key === point.category)?.label || 'Location'}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Statistics Section */}
-                  <div className="popup-stats-section">
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">star</span>
-                      <span className="stat-value">{point.averageRating ? point.averageRating.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Rating</span>
-                    </div>
-                    
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">payments</span>
-                      <span className="stat-value">{point.averagePriceLevel ? point.averagePriceLevel.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Price</span>
-                    </div>
-                    
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">directions_car</span>
-                      <span className="stat-value">{point.averageAccessibilityArrival ? point.averageAccessibilityArrival.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Difficulty</span>
-                    </div>
-                    
-                    <div className="popup-stat-item">
-                      <span className="material-symbols-outlined">accessible</span>
-                      <span className="stat-value">{point.averageAccessibilityDisability ? point.averageAccessibilityDisability.toFixed(1) : '0'}</span>
-                      <span className="stat-label">Access</span>
-                    </div>
-                  </div>
-                  
-                  {/* Review Count */}
-                  <div className="popup-review-count-badge">
-                    <span className="material-symbols-outlined">rate_review</span>
-                    <span>{getReviewCount(point)} reviews</span>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="popup-actions-professional">
-                    <button 
-                      className={`popup-btn-pro popup-btn-favorite ${favoritePoints.includes(point._id) ? 'is-favorite' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleFavorite(point._id);
-                      }}
-                      title={favoritePoints.includes(point._id) ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      <span className="material-symbols-outlined">
-                        {favoritePoints.includes(point._id) ? 'favorite' : 'favorite_border'}
-                      </span>
-                    </button>
-                    <button 
-                      className="popup-btn-pro popup-btn-primary-pro"
-                      onClick={() => handleWriteReview(point)}
-                    >
-                      Write Review
-                    </button>
-                    <button 
-                      className="popup-btn-pro popup-btn-secondary-pro"
-                      onClick={() => handleViewReviews(point)}
-                    >
-                      View Reviews
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+              icon={createPointIcon(point.category, selectedPoint?._id === point._id)}
+              eventHandlers={{
+                click: () => {
+                  setSelectedPoint(point);
+                  // Center map on selected point
+                  if (mapInstance) {
+                    mapInstance.panTo([point.lat, point.lng], {
+                      animate: true,
+                      duration: 0.5
+                    });
+                  }
+                }
+              }}
+            />
           ))}
+
 
           {/* Event marker - temporary highlight when viewing event */}
           {eventToShow && eventToShow.location && (
@@ -603,6 +562,16 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
             </Marker>
           )}
         </MapContainer>
+
+        {/* Side Panel for selected point */}
+        {selectedPoint && (
+          <PointSidePanel
+            point={selectedPoint}
+            onClose={() => setSelectedPoint(null)}
+            onToggleFavorite={handleToggleFavorite}
+            isFavorite={favoritePoints.includes(selectedPoint._id)}
+          />
+        )}
 
         {/* Floating Action Button */}
         <button 
@@ -668,7 +637,12 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
                 </div>
               ) : (
                 <div className="reviews-list">
-                  {pointReviews.map((review) => (
+                  {pointReviews.map((review) => {
+                    const isOwner = user && review.userId?._id === user.id;
+                    const isAdmin = user && user.role === 'admin';
+                    const canDelete = isOwner || isAdmin;
+                    
+                    return (
                     <div key={review._id} className="review-card">
                       {/* Review Header - Avatar + Name + Date */}
                       <div className="review-header">
@@ -687,6 +661,15 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
                             })}
                           </div>
                         </div>
+                        {canDelete && (
+                          <button
+                            className="review-delete-btn"
+                            onClick={() => handleDeleteReview(review._id)}
+                            title="Delete review"
+                          >
+                            <span className="material-symbols-outlined">delete</span>
+                          </button>
+                        )}
                       </div>
                       
                       {/* Stats Row */}
@@ -717,7 +700,8 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
                         <div className="review-text">{review.text}</div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

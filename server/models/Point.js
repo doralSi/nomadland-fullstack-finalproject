@@ -60,7 +60,17 @@ const pointSchema = new mongoose.Schema({
     default: null
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual field for review count
+pointSchema.virtual('reviewCount', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'pointId',
+  count: true
 });
 
 export default mongoose.model('Point', pointSchema);
