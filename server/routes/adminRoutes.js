@@ -12,7 +12,10 @@ import {
   deletePoint,
   deleteEvent,
   promoteToMapRanger,
-  demoteFromMapRanger
+  demoteFromMapRanger,
+  approvePoint,
+  rejectPoint,
+  togglePointPrivacy
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -34,6 +37,9 @@ router.put("/users/:id/demote", demoteFromMapRanger);
 
 // Points management
 router.get("/points", getPoints);
+router.patch("/points/:id/privacy", togglePointPrivacy);
+router.patch("/points/:id/approve", approvePoint);
+router.patch("/points/:id/reject", rejectPoint);
 router.delete("/points/:id", deletePoint);
 
 // Events management

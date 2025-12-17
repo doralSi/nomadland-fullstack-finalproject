@@ -34,9 +34,10 @@ const Register = () => {
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    // Validate password requirements
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d.*\d.*\d.*\d)(?=.*[!@#$%^&*\-_]).{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setError('Password must be at least 8 characters and contain: 1 uppercase letter, 1 lowercase letter, 4 digits, and 1 special character (!@#$%^&*-_)');
       return;
     }
 
@@ -116,8 +117,11 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="Enter your password (min 6 characters)"
+              placeholder="Min 8 chars: Aa, 4 digits, 1 special (!@#$%^&*-_)"
             />
+            <small className="password-hint">
+              Must include: uppercase, lowercase, 4 digits, special character
+            </small>
           </div>
 
           <div className="form-group">

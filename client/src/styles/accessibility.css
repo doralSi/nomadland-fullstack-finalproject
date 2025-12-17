@@ -1,0 +1,24 @@
+/* Accessibility: Increase Spacing */
+body.increase-spacing {
+  line-height: 1.8;
+}
+
+body.increase-spacing p,
+body.increase-spacing li,
+body.increase-spacing div {
+  margin-bottom: 1.2em;
+}
+
+body.increase-spacing .card,
+body.increase-spacing .accessibility-section,
+body.increase-spacing button,
+body.increase-spacing input {
+  margin-bottom: 1.5em;
+}
+
+body.increase-spacing h1,
+body.increase-spacing h2,
+body.increase-spacing h3 {
+  margin-bottom: 1em;
+  margin-top: 1em;
+}

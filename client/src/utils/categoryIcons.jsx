@@ -18,7 +18,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 // Category to Material Icon mapping
 const categoryIconMap = {
-  // Primary categories from CATEGORIES constant
+  // Official categories (as defined in constants/categories.js)
   trail: HikingIcon,
   spring: OpacityIcon,
   viewpoint: LandscapeIcon,
@@ -35,7 +35,19 @@ const categoryIconMap = {
   sports: SportsSoccerIcon,
   religion: ChurchIcon,
   
-  // Legacy/alternative mappings
+  // Legacy mappings (for backward compatibility - will be migrated)
+  trails: HikingIcon,
+  viewpoints: LandscapeIcon,
+  beaches: BeachAccessIcon,
+  restaurants: RestaurantIcon,
+  cafes: LocalCafeIcon,
+  markets: StorefrontIcon,
+  coworking: LaptopMacIcon,
+  activities: SportsSoccerIcon,
+  nature: LandscapeIcon,
+  other: LocationOnIcon,
+  
+  // Additional alternative mappings
   hiking: HikingIcon,
   water: OpacityIcon,
   lookout: LandscapeIcon,
@@ -48,7 +60,6 @@ const categoryIconMap = {
   sport: SportsSoccerIcon,
   
   // Default fallback
-  other: LocationOnIcon,
   default: LocationOnIcon
 };
 

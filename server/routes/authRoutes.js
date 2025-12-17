@@ -7,5 +7,6 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/profile", authMiddleware, getProfile);
+router.get("/me", authMiddleware, getProfile); // Same as profile, for compatibility
 
 export default router;

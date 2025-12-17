@@ -1,30 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import axios from '../api/axiosInstance';
 import { useRegion } from '../context/RegionContext';
+import LocationMarker from '../components/map/LocationMarker';
+import { isPointInRegion, getLocationWarning } from '../utils/regionValidation';
+import '../utils/leafletConfig';
 import './AddEvent.css';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icon
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Component to handle map clicks
-function LocationMarker({ position, setPosition }) {
-  useMapEvents({
-    click(e) {
-      setPosition(e.latlng);
-    },
-  });
-
-  return position === null ? null : <Marker position={position} />;
-}
 
 const AddEvent = () => {
   const { slug } = useParams();
@@ -59,36 +42,11 @@ const AddEvent = () => {
     }
   }, [currentRegion]);
 
-  // Check if point is inside region polygon
-  const isPointInRegion = (lat, lng) => {
-    if (!currentRegion || !currentRegion.polygon) return true;
-
-    const polygon = currentRegion.polygon;
-    const x = lng;
-    const y = lat;
-    let inside = false;
-
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0];
-      const yi = polygon[i][1];
-      const xj = polygon[j][0];
-      const yj = polygon[j][1];
-
-      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-
-    return inside;
-  };
-
   // Validate location when position changes
   useEffect(() => {
     if (position && currentRegion) {
-      if (!isPointInRegion(position.lat, position.lng)) {
-        setLocationWarning(`⚠️ אזהרה: מיקום זה נמצא מחוץ לגבולות אזור ${currentRegion.name}`);
-      } else {
-        setLocationWarning('');
-      }
+      const warning = getLocationWarning(position.lat, position.lng, currentRegion);
+      setLocationWarning(warning);
     }
   }, [position, currentRegion]);
 

@@ -1,52 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { getUserPointsInRegion } from '../api/personalMaps';
 import { deletePoint, updatePoint, removeFromFavorites } from '../api/points';
 import { useAuth } from '../context/AuthContext';
-import { CATEGORIES } from '../constants/categories';
+import { getCategoryIcon, createPersonalPointIcon, createPointIcon } from '../utils/mapIcons';
+import { MapViewController } from '../components/map/MapHelpers';
+import '../utils/leafletConfig';
 import PointSidePanel from '../components/PointSidePanel';
 import RegionHero from '../components/RegionHero';
 import axiosInstance from '../api/axiosInstance';
 import './PersonalRegionMap.css';
-
-// Custom icon colors based on category like in RegionMap
-const getCategoryIcon = (categoryKey) => {
-  const item = CATEGORIES.find(c => c.key === categoryKey);
-  return item ? item.materialIcon : 'location_on';
-};
-
-// Create custom DivIcon for points
-const createPointIcon = (categoryKey, pointType, isSelected = false) => {
-  const iconName = getCategoryIcon(categoryKey);
-  const typeClass = pointType === 'private' ? 'private-point' : 
-                    pointType === 'favorite' ? 'favorite-point' : 
-                    pointType === 'reviewed' ? 'reviewed-point' : 'public-point';
-  
-  return L.divIcon({
-    className: 'custom-div-icon',
-    html: `
-      <div class="map-marker category-${categoryKey} ${typeClass} ${isSelected ? 'selected-marker' : ''}">
-        <span class="material-symbols-outlined">${iconName}</span>
-      </div>
-    `,
-    iconSize: isSelected ? [48, 48] : [32, 32],
-    iconAnchor: isSelected ? [24, 48] : [16, 32],
-    popupAnchor: [0, -32]
-  });
-};
-
-// Map controller to set view
-const MapViewController = ({ center, zoom }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center && zoom) {
-      map.setView([center.lat, center.lng], zoom);
-    }
-  }, [center, zoom, map]);
-  return null;
-};
 
 const PersonalRegionMap = () => {
   const { regionSlug } = useParams();
@@ -294,7 +259,7 @@ const PersonalRegionMap = () => {
               <Marker
                 key={`favorite-${point._id}`}
                 position={[point.lat, point.lng]}
-                icon={createPointIcon(point.category, 'favorite', isSelected)}
+                icon={createPersonalPointIcon(point.category, 'favorite', isSelected)}
                 eventHandlers={{
                   click: () => setSelectedPoint(point)
                 }}
@@ -309,7 +274,7 @@ const PersonalRegionMap = () => {
               <Marker
                 key={`reviewed-${point._id}`}
                 position={[point.lat, point.lng]}
-                icon={createPointIcon(point.category, 'reviewed', isSelected)}
+                icon={createPersonalPointIcon(point.category, 'reviewed', isSelected)}
                 eventHandlers={{
                   click: () => setSelectedPoint(point)
                 }}

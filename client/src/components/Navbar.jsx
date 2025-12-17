@@ -79,8 +79,8 @@ const Navbar = () => {
               </li>
               {(user?.role === 'mapRanger' || user?.role === 'admin') && (
                 <li className="navbar-item">
-                  <Link to="/map-ranger" className="navbar-link navbar-link-highlight" onClick={closeMobileMenu}>
-                    🗺️ Map Ranger Panel
+                  <Link to="/map-ranger" className="navbar-link" onClick={closeMobileMenu}>
+                    Map Ranger Panel
                   </Link>
                 </li>
               )}
@@ -91,8 +91,8 @@ const Navbar = () => {
                   </Link>
                 </li>
               )}
-              <li className="navbar-item">
-                <span className="navbar-user">Welcome, {user?.firstName || user?.name || user?.email}</span>
+              <li className="navbar-item navbar-item-compact">
+                <span className="navbar-user">Welcome, {user?.firstName || user?.name?.split(' ')[0] || 'User'}</span>
               </li>
               <li className="navbar-item">
                 <Link to="/profile" className="navbar-icon-button" title="My Profile" onClick={closeMobileMenu}>

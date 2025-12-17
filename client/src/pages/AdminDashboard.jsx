@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useRegion } from "../context/RegionContext";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
+import PointSidePanel from "../components/PointSidePanel";
+import EventDetailsModal from "../components/EventDetailsModal";
+import StatsCards from "../components/admin/StatsCards";
+import UsersTable from "../components/admin/UsersTable";
+import PointsTable from "../components/admin/PointsTable";
+import EventsTable from "../components/admin/EventsTable";
+import Pagination from "../components/admin/Pagination";
+import PromoteModal from "../components/admin/PromoteModal";
+import { CATEGORIES } from "../constants/categories";
 import {
   getAdminStats,
   getUsers,
@@ -14,11 +25,11 @@ import {
   getAdminEvents,
   deleteEvent,
 } from "../api/admin";
-import { getAllRegions } from "../api/regions";
 import "../styles/AdminDashboard.css";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const { regions } = useRegion();
   const navigate = useNavigate();
   
   // Stats
@@ -43,6 +54,7 @@ const AdminDashboard = () => {
   const [pointsRegionFilter, setPointsRegionFilter] = useState("");
   const [pointsCategoryFilter, setPointsCategoryFilter] = useState("");
   const [pointsStatusFilter, setPointsStatusFilter] = useState("");
+  const [selectedPointForView, setSelectedPointForView] = useState(null);
   
   // Events tab
   const [events, setEvents] = useState([]);
@@ -52,11 +64,14 @@ const AdminDashboard = () => {
   const [eventsRegionFilter, setEventsRegionFilter] = useState("");
   const [eventsStartDate, setEventsStartDate] = useState("");
   const [eventsEndDate, setEventsEndDate] = useState("");
-  
-  // Regions for filters
-  const [regions, setRegions] = useState([]);
+  const [selectedEventForView, setSelectedEventForView] = useState(null);
   
   const [loading, setLoading] = useState(false);
+  
+  // Promote modal
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [userToPromote, setUserToPromote] = useState(null);
+  const [selectedRegions, setSelectedRegions] = useState([]);
 
   // Check if user is admin
   useEffect(() => {
@@ -68,19 +83,6 @@ const AdminDashboard = () => {
   // Load stats
   useEffect(() => {
     loadStats();
-  }, []);
-
-  // Load regions for filters
-  useEffect(() => {
-    const loadRegions = async () => {
-      try {
-        const data = await getAllRegions();
-        setRegions(data);
-      } catch (error) {
-        console.error("Error loading regions:", error);
-      }
-    };
-    loadRegions();
   }, []);
 
   // Load data based on active tab
@@ -183,7 +185,7 @@ const AdminDashboard = () => {
         loadStats();
       } catch (error) {
         console.error("Error freezing user:", error);
-        alert("שגיאה בהקפאת משתמש");
+        alert("Error freezing user");
       }
     }
   };
@@ -195,71 +197,101 @@ const AdminDashboard = () => {
       loadStats();
     } catch (error) {
       console.error("Error unfreezing user:", error);
-      alert("שגיאה בהפשרת משתמש");
+      alert("Error unfreezing user");
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm("האם אתה בטוח שברצונך למחוק את המשתמש? פעולה זו אינה הפיכה!")) {
+    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone!")) {
       try {
         await deleteUser(userId);
         loadUsers();
         loadStats();
       } catch (error) {
         console.error("Error deleting user:", error);
-        alert(error.response?.data?.message || "שגיאה במחיקת משתמש");
+        alert(error.response?.data?.message || "Error deleting user");
       }
     }
   };
 
   const handlePromoteUser = async (userId) => {
-    if (window.confirm("האם אתה בטוח שברצונך לקדם את המשתמש ל-Map Ranger?")) {
-      try {
-        await promoteToMapRanger(userId);
-        loadUsers();
-        loadStats();
-      } catch (error) {
-        console.error("Error promoting user:", error);
-        alert("שגיאה בקידום משתמש");
-      }
+    setUserToPromote(userId);
+    setSelectedRegions([]);
+    setShowPromoteModal(true);
+  };
+  
+  const confirmPromote = async () => {
+    if (selectedRegions.length === 0) {
+      alert("Please select at least one region");
+      return;
+    }
+    
+    try {
+      await promoteToMapRanger(userToPromote, selectedRegions);
+      setShowPromoteModal(false);
+      setUserToPromote(null);
+      setSelectedRegions([]);
+      loadUsers();
+      loadStats();
+    } catch (error) {
+      console.error("Error promoting user:", error);
+      alert("Error promoting user");
     }
   };
 
   const handleDemoteUser = async (userId) => {
-    if (window.confirm("האם אתה בטוח שברצונך להוריד את המשתמש מ-Map Ranger?")) {
+    if (window.confirm("Are you sure you want to demote this user from Map Ranger?")) {
       try {
         await demoteFromMapRanger(userId);
         loadUsers();
         loadStats();
       } catch (error) {
         console.error("Error demoting user:", error);
-        alert("שגיאה בהורדת משתמש");
+        alert("Error demoting user");
+      }
+    }
+  };
+
+  const handleTogglePrivacy = async (pointId, currentIsPrivate) => {
+    const newPrivacy = !currentIsPrivate;
+    const message = newPrivacy 
+      ? "Are you sure you want to make this point private?"
+      : "Are you sure you want to make this point public?";
+    
+    if (window.confirm(message)) {
+      try {
+        await axiosInstance.patch(`/admin/points/${pointId}/privacy`, { isPrivate: newPrivacy });
+        loadPoints();
+        loadStats();
+      } catch (error) {
+        console.error("Error toggling point privacy:", error);
+        alert("Error updating point privacy");
       }
     }
   };
 
   const handleDeletePoint = async (pointId) => {
-    if (window.confirm("האם אתה בטוח שברצונך למחוק את הנקודה? פעולה זו אינה הפיכה!")) {
+    if (window.confirm("Are you sure you want to delete this point? This action cannot be undone!")) {
       try {
         await deletePoint(pointId);
         loadPoints();
         loadStats();
       } catch (error) {
         console.error("Error deleting point:", error);
-        alert("שגיאה במחיקת נקודה");
+        alert("Error deleting point");
       }
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (window.confirm("האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה הפיכה!")) {
+    if (window.confirm("Are you sure you want to delete this event? This action cannot be undone!")) {
       try {
         await deleteEvent(eventId);
         loadEvents();
         loadStats();
       } catch (error) {
         console.error("Error deleting event:", error);
-        alert("שגיאה במחיקת אירוע");
+        alert("Error deleting event");
       }
     }
   };
@@ -285,57 +317,10 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      <h1 className="admin-title">🛡️ Admin Dashboard</h1>
+      <h1 className="admin-title">Admin Dashboard</h1>
 
       {/* Stats Cards */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">👥</div>
-            <div className="stat-info">
-              <h3>{stats.totalUsers}</h3>
-              <p>Total Users</p>
-              <small>{stats.newUsers} new (7 days)</small>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">📍</div>
-            <div className="stat-info">
-              <h3>{stats.totalPoints}</h3>
-              <p>Total Points</p>
-              <small>{stats.pendingPoints} pending</small>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">📅</div>
-            <div className="stat-info">
-              <h3>{stats.totalEvents}</h3>
-              <p>Total Events</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">⭐</div>
-            <div className="stat-info">
-              <h3>{stats.totalReviews}</h3>
-              <p>Total Reviews</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🗺️</div>
-            <div className="stat-info">
-              <h3>{stats.mapRangers}</h3>
-              <p>Map Rangers</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🛡️</div>
-            <div className="stat-info">
-              <h3>{stats.admins}</h3>
-              <p>Admins</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatsCards stats={stats} />
 
       {/* Tabs */}
       <div className="admin-tabs">
@@ -343,19 +328,19 @@ const AdminDashboard = () => {
           className={`tab-button ${activeTab === "users" ? "active" : ""}`}
           onClick={() => setActiveTab("users")}
         >
-          👥 משתמשים
+          Users
         </button>
         <button
           className={`tab-button ${activeTab === "points" ? "active" : ""}`}
           onClick={() => setActiveTab("points")}
         >
-          📍 תוכן
+          Points
         </button>
         <button
           className={`tab-button ${activeTab === "events" ? "active" : ""}`}
           onClick={() => setActiveTab("events")}
         >
-          📅 לוח אירועים
+          Events
         </button>
       </div>
 
@@ -365,7 +350,7 @@ const AdminDashboard = () => {
           <div className="filters-bar">
             <input
               type="text"
-              placeholder="🔍 חיפוש לפי שם או אימייל..."
+              placeholder="Search by name or email..."
               value={usersSearch}
               onChange={handleUsersSearchChange}
               className="search-input"
@@ -378,7 +363,7 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל התפקידים</option>
+              <option value="">All Roles</option>
               <option value="user">User</option>
               <option value="mapRanger">Map Ranger</option>
               <option value="admin">Admin</option>
@@ -391,7 +376,7 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל הסטטוסים</option>
+              <option value="">All Statuses</option>
               <option value="active">Active</option>
               <option value="frozen">Frozen</option>
             </select>
@@ -401,115 +386,20 @@ const AdminDashboard = () => {
             <div className="loading">Loading...</div>
           ) : (
             <>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>שם</th>
-                      <th>אימייל</th>
-                      <th>תפקיד</th>
-                      <th>סטטוס</th>
-                      <th>Points</th>
-                      <th>Reviews</th>
-                      <th>תאריך הצטרפות</th>
-                      <th>פעולות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u._id}>
-                        <td>{u.name}</td>
-                        <td>{u.email}</td>
-                        <td>
-                          <span className={`role-badge ${u.role}`}>
-                            {u.role === "admin"
-                              ? "🛡️ Admin"
-                              : u.role === "mapRanger"
-                              ? "🗺️ Ranger"
-                              : "👤 User"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`status-badge ${
-                              u.status === "frozen" ? "frozen" : "active"
-                            }`}
-                          >
-                            {u.status === "frozen" ? "🧊 Frozen" : "✅ Active"}
-                          </span>
-                        </td>
-                        <td>{u.pointsCount}</td>
-                        <td>{u.reviewsCount}</td>
-                        <td>{new Date(u.createdAt).toLocaleDateString("he-IL")}</td>
-                        <td>
-                          <div className="action-buttons">
-                            {u.status === "active" ? (
-                              <button
-                                onClick={() => handleFreezeUser(u._id)}
-                                className="btn-freeze"
-                                disabled={u.role === "admin"}
-                              >
-                                🧊 הקפא
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleUnfreezeUser(u._id)}
-                                className="btn-unfreeze"
-                              >
-                                ✅ הפשר
-                              </button>
-                            )}
-                            {u.role === "user" && (
-                              <button
-                                onClick={() => handlePromoteUser(u._id)}
-                                className="btn-promote"
-                              >
-                                ⬆️ קדם
-                              </button>
-                            )}
-                            {u.role === "mapRanger" && (
-                              <button
-                                onClick={() => handleDemoteUser(u._id)}
-                                className="btn-demote"
-                              >
-                                ⬇️ הורד
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteUser(u._id)}
-                              className="btn-delete"
-                              disabled={u.role === "admin"}
-                            >
-                              🗑️ מחק
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <UsersTable
+                users={users}
+                onFreeze={handleFreezeUser}
+                onUnfreeze={handleUnfreezeUser}
+                onPromote={handlePromoteUser}
+                onDemote={handleDemoteUser}
+                onDelete={handleDeleteUser}
+              />
 
-              {/* Pagination */}
-              <div className="pagination">
-                <button
-                  onClick={() => setUsersPage(usersPage - 1)}
-                  disabled={usersPage === 1}
-                  className="pagination-btn"
-                >
-                  ← הקודם
-                </button>
-                <span className="pagination-info">
-                  עמוד {usersPage} מתוך {usersTotalPages}
-                </span>
-                <button
-                  onClick={() => setUsersPage(usersPage + 1)}
-                  disabled={usersPage >= usersTotalPages}
-                  className="pagination-btn"
-                >
-                  הבא →
-                </button>
-              </div>
+              <Pagination
+                currentPage={usersPage}
+                totalPages={usersTotalPages}
+                onPageChange={setUsersPage}
+              />
             </>
           )}
         </div>
@@ -521,7 +411,7 @@ const AdminDashboard = () => {
           <div className="filters-bar">
             <input
               type="text"
-              placeholder="🔍 חיפוש לפי שם נקודה..."
+              placeholder="Search by point name..."
               value={pointsSearch}
               onChange={handlePointsSearchChange}
               className="search-input"
@@ -534,9 +424,9 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל האזורים</option>
+              <option value="">All Regions</option>
               {regions.map((region) => (
-                <option key={region._id} value={region._id}>
+                <option key={region._id} value={region.slug}>
                   {region.name}
                 </option>
               ))}
@@ -549,13 +439,12 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל הקטגוריות</option>
-              <option value="camp">⛺ Camp</option>
-              <option value="water">💧 Water</option>
-              <option value="wifi">📶 WiFi</option>
-              <option value="food">🍽️ Food</option>
-              <option value="attraction">🎯 Attraction</option>
-              <option value="warning">⚠️ Warning</option>
+              <option value="">All Categories</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.key} value={cat.key}>
+                  {cat.label}
+                </option>
+              ))}
             </select>
             <select
               value={pointsStatusFilter}
@@ -565,9 +454,9 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל הסטטוסים</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
+              <option value="">All Types</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
             </select>
           </div>
 
@@ -575,82 +464,19 @@ const AdminDashboard = () => {
             <div className="loading">Loading...</div>
           ) : (
             <>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>שם</th>
-                      <th>קטגוריה</th>
-                      <th>אזור</th>
-                      <th>נוצר ע"י</th>
-                      <th>סטטוס</th>
-                      <th>תאריך</th>
-                      <th>פעולות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {points.map((point) => (
-                      <tr key={point._id}>
-                        <td>{point.name}</td>
-                        <td>{point.category}</td>
-                        <td>{point.region?.name || "N/A"}</td>
-                        <td>{point.createdBy?.name || "Unknown"}</td>
-                        <td>
-                          <span
-                            className={`status-badge ${
-                              point.status === "approved" ? "active" : "pending"
-                            }`}
-                          >
-                            {point.status}
-                          </span>
-                        </td>
-                        <td>
-                          {new Date(point.createdAt).toLocaleDateString("he-IL")}
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button
-                              onClick={() =>
-                                navigate(`/points/${point._id}`)
-                              }
-                              className="btn-view"
-                            >
-                              👁️ צפה
-                            </button>
-                            <button
-                              onClick={() => handleDeletePoint(point._id)}
-                              className="btn-delete"
-                            >
-                              🗑️ מחק
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <PointsTable
+                points={points}
+                onTogglePrivacy={handleTogglePrivacy}
+                onView={setSelectedPointForView}
+                onDelete={handleDeletePoint}
+                showRegion={true}
+              />
 
-              {/* Pagination */}
-              <div className="pagination">
-                <button
-                  onClick={() => setPointsPage(pointsPage - 1)}
-                  disabled={pointsPage === 1}
-                  className="pagination-btn"
-                >
-                  ← הקודם
-                </button>
-                <span className="pagination-info">
-                  עמוד {pointsPage} מתוך {pointsTotalPages}
-                </span>
-                <button
-                  onClick={() => setPointsPage(pointsPage + 1)}
-                  disabled={pointsPage >= pointsTotalPages}
-                  className="pagination-btn"
-                >
-                  הבא →
-                </button>
-              </div>
+              <Pagination
+                currentPage={pointsPage}
+                totalPages={pointsTotalPages}
+                onPageChange={setPointsPage}
+              />
             </>
           )}
         </div>
@@ -662,7 +488,7 @@ const AdminDashboard = () => {
           <div className="filters-bar">
             <input
               type="text"
-              placeholder="🔍 חיפוש לפי שם אירוע..."
+              placeholder="Search by event name..."
               value={eventsSearch}
               onChange={handleEventsSearchChange}
               className="search-input"
@@ -675,7 +501,7 @@ const AdminDashboard = () => {
               }}
               className="filter-select"
             >
-              <option value="">כל האזורים</option>
+              <option value="">All Regions</option>
               {regions.map((region) => (
                 <option key={region._id} value={region._id}>
                   {region.name}
@@ -690,7 +516,7 @@ const AdminDashboard = () => {
                 setEventsPage(1);
               }}
               className="filter-select"
-              placeholder="מתאריך"
+              placeholder="Start Date"
             />
             <input
               type="date"
@@ -700,7 +526,7 @@ const AdminDashboard = () => {
                 setEventsPage(1);
               }}
               className="filter-select"
-              placeholder="עד תאריך"
+              placeholder="End Date"
             />
           </div>
 
@@ -708,79 +534,66 @@ const AdminDashboard = () => {
             <div className="loading">Loading...</div>
           ) : (
             <>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>שם</th>
-                      <th>אזור</th>
-                      <th>תאריך התחלה</th>
-                      <th>תאריך סיום</th>
-                      <th>נוצר ע"י</th>
-                      <th>משתתפים</th>
-                      <th>פעולות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {events.map((event) => (
-                      <tr key={event._id}>
-                        <td>{event.name}</td>
-                        <td>{event.region?.name || "N/A"}</td>
-                        <td>
-                          {new Date(event.startDate).toLocaleDateString("he-IL")}
-                        </td>
-                        <td>
-                          {new Date(event.endDate).toLocaleDateString("he-IL")}
-                        </td>
-                        <td>{event.createdBy?.name || "Unknown"}</td>
-                        <td>{event.participants?.length || 0}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button
-                              onClick={() =>
-                                navigate(`/events/${event._id}`)
-                              }
-                              className="btn-view"
-                            >
-                              👁️ צפה
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEvent(event._id)}
-                              className="btn-delete"
-                            >
-                              🗑️ מחק
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <EventsTable
+                events={events}
+                onView={setSelectedEventForView}
+                onDelete={handleDeleteEvent}
+                showRegion={true}
+              />
 
-              {/* Pagination */}
-              <div className="pagination">
-                <button
-                  onClick={() => setEventsPage(eventsPage - 1)}
-                  disabled={eventsPage === 1}
-                  className="pagination-btn"
-                >
-                  ← הקודם
-                </button>
-                <span className="pagination-info">
-                  עמוד {eventsPage} מתוך {eventsTotalPages}
-                </span>
-                <button
-                  onClick={() => setEventsPage(eventsPage + 1)}
-                  disabled={eventsPage >= eventsTotalPages}
-                  className="pagination-btn"
-                >
-                  הבא →
-                </button>
-              </div>
+              <Pagination
+                currentPage={eventsPage}
+                totalPages={eventsTotalPages}
+                onPageChange={setEventsPage}
+              />
             </>
           )}
         </div>
+      )}
+      
+      {/* Promote to Map Ranger Modal */}
+      {showPromoteModal && (
+        <PromoteModal
+          regions={regions}
+          selectedRegions={selectedRegions}
+          onToggleRegion={(slug, checked) => {
+            if (checked) {
+              setSelectedRegions([...selectedRegions, slug]);
+            } else {
+              setSelectedRegions(selectedRegions.filter(s => s !== slug));
+            }
+          }}
+          onConfirm={confirmPromote}
+          onCancel={() => setShowPromoteModal(false)}
+        />
+      )}
+
+      {/* Point View Modal */}
+      {selectedPointForView && (
+        <div className="modal-overlay" onClick={() => setSelectedPointForView(null)}>
+          <div className="point-modal-container" onClick={(e) => e.stopPropagation()}>
+            <PointSidePanel
+              point={selectedPointForView}
+              onClose={() => setSelectedPointForView(null)}
+              onToggleFavorite={() => {}}
+              isFavorite={false}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Event View Modal */}
+      {selectedEventForView && (
+        <EventDetailsModal
+          event={selectedEventForView}
+          region={selectedEventForView.region}
+          onClose={() => setSelectedEventForView(null)}
+          onShowOnMap={() => {}}
+          onEventDeleted={() => {
+            setSelectedEventForView(null);
+            loadData();
+          }}
+        />
       )}
     </div>
   );

@@ -13,7 +13,8 @@ import {
   deleteEventByMapRanger,
   getUsers,
   promoteToMapRanger,
-  demoteToUser
+  demoteToUser,
+  getRegionStats
 } from '../controllers/mapRangerController.js';
 
 const router = express.Router();
@@ -39,5 +40,8 @@ router.delete('/events/:id', deleteEventByMapRanger);
 router.get('/users', getUsers);
 router.patch('/users/:id/promote', promoteToMapRanger);
 router.patch('/users/:id/demote', demoteToUser);
+
+// ==================== STATS ====================
+router.get('/stats/:regionSlug', getRegionStats);
 
 export default router;

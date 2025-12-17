@@ -1,93 +1,19 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getPoints, addToFavorites, removeFromFavorites } from '../api/points';
 import { polygonToLeafletFormat, isPointInsideRegion } from '../utils/isInsidePolygon';
-import { CATEGORIES } from '../constants/categories';
 import { useAuth } from '../context/AuthContext';
+import { getCategoryIcon, getCategoryLabel, createPointIcon } from '../utils/mapIcons';
+import { MapBounds, MapClickHandler, MapInstanceCapture } from './map/MapHelpers';
+import PlaceSearchBar from './map/PlaceSearchBar';
+import { useFavorites } from '../hooks/useFavorites';
+import '../utils/leafletConfig';
 import AddPointModal from './AddPointModal';
 import PointSidePanel from './PointSidePanel';
 import './RegionMap.css';
-
-// Helper function to get category icon
-const getCategoryIcon = (categoryKey) => {
-  const item = CATEGORIES.find(c => c.key === categoryKey);
-  return item ? item.materialIcon : 'location_on';
-};
-
-// Helper function to get category label
-const getCategoryLabel = (categoryKey) => {
-  const item = CATEGORIES.find(c => c.key === categoryKey);
-  return item ? item.label : categoryKey;
-};
-
-// Create custom DivIcon for points based on category
-const createPointIcon = (categoryKey, isSelected = false) => {
-  const iconName = getCategoryIcon(categoryKey);
-  return L.divIcon({
-    className: 'custom-div-icon',
-    html: `
-      <div class="map-marker category-${categoryKey} ${isSelected ? 'selected-marker' : ''}">
-        <span class="material-symbols-outlined">${iconName}</span>
-      </div>
-    `,
-    iconSize: isSelected ? [48, 48] : [32, 32],
-    iconAnchor: isSelected ? [24, 48] : [16, 32],
-    popupAnchor: [0, -32]
-  });
-};
-
-// Fix Leaflet default marker icon issue (keep for compatibility)
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Component to handle map bounds
-const MapBounds = ({ region }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (region && region.polygon && region.polygon.length > 0) {
-      const bounds = polygonToLeafletFormat(region.polygon);
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [region, map]);
-
-  return null;
-};
-
-// Component to handle map clicks for adding points
-const MapClickHandler = ({ isAddingPoint, onMapClick }) => {
-  useMapEvents({
-    click: (e) => {
-      if (isAddingPoint) {
-        onMapClick(e.latlng);
-      }
-    }
-  });
-
-  return null;
-};
-
-// Component to capture map instance
-const MapInstanceCapture = ({ onMapReady }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (map) {
-      onMapReady(map);
-    }
-  }, [map, onMapReady]);
-  
-  return null;
-};
 
 const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
   const navigate = useNavigate();
@@ -98,38 +24,23 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
   const [showAddPointModal, setShowAddPointModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
-  const [searchMarker, setSearchMarker] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReviewFormModal, setShowReviewFormModal] = useState(false);
   const [pointReviews, setPointReviews] = useState([]);
-  const [favoritePoints, setFavoritePoints] = useState([]);
+  const [searchMarker, setSearchMarker] = useState(null);
   const eventMarkerRef = useRef(null);
+
+  // Use custom hook for favorites
+  const { favoritePoints, setFavoritePoints, loadFavorites, isFavorite } = useFavorites(user);
 
   useEffect(() => {
     loadPoints();
     if (user) {
       loadFavorites();
     }
-  }, [region, user]);
-
-  const loadFavorites = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setFavoritePoints(data.user.favoritePoints || []);
-    } catch (err) {
-      console.error('Failed to load favorites:', err);
-    }
-  };
+  }, [region, user, loadFavorites]);
 
   // Effect to zoom to event location when eventToShow changes
   useEffect(() => {
@@ -297,100 +208,6 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
     }
   };
 
-  const handleSearch = async (query) => {
-    if (!query || query.length < 2) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-
-    const results = [];
-
-    // 1. Search in our filtered points
-    const matchingPoints = filteredPoints.filter(point =>
-      point.title.toLowerCase().includes(query.toLowerCase()) ||
-      point.description?.toLowerCase().includes(query.toLowerCase())
-    );
-
-    matchingPoints.forEach(point => {
-      results.push({
-        type: 'point',
-        id: point._id,
-        name: point.title,
-        description: point.description,
-        lat: point.lat,
-        lng: point.lng,
-        category: point.category
-      });
-    });
-
-    // 2. Search in geographic locations using Nominatim
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?` +
-        `format=json&q=${encodeURIComponent(query + ', ' + region.name)}&limit=5`
-      );
-      const geoResults = await response.json();
-
-      geoResults.forEach(result => {
-        results.push({
-          type: 'location',
-          name: result.display_name,
-          lat: parseFloat(result.lat),
-          lng: parseFloat(result.lon)
-        });
-      });
-    } catch (err) {
-      console.error('Geocoding error:', err);
-    }
-
-    setSearchResults(results);
-    setShowSearchResults(true);
-  };
-
-  const handleSelectSearchResult = (result) => {
-    if (!mapInstance) return;
-
-    // Zoom to location
-    mapInstance.setView([result.lat, result.lng], 16, { animate: true });
-
-    // Remove existing search marker if any
-    if (searchMarker && mapInstance.hasLayer(searchMarker)) {
-      mapInstance.removeLayer(searchMarker);
-    }
-
-    // Add marker for location type results
-    if (result.type === 'location') {
-      const marker = L.marker([result.lat, result.lng], {
-        icon: L.divIcon({
-          className: 'custom-div-icon',
-          html: `
-            <div class="map-marker search-marker">
-              <span class="material-symbols-outlined">search</span>
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32]
-        })
-      }).addTo(mapInstance);
-
-      marker.bindPopup(`
-        <div style="text-align: center;">
-          <strong>${result.name}</strong><br/>
-          <button onclick="window.dispatchEvent(new CustomEvent('addPointAtLocation', { detail: { lat: ${result.lat}, lng: ${result.lng} } }))" 
-                  style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Add Point Here
-          </button>
-        </div>
-      `).openPopup();
-
-      setSearchMarker(marker);
-    }
-
-    setShowSearchResults(false);
-    setSearchQuery('');
-  };
-
   // Listen for add point at location event
   useEffect(() => {
     const handleAddPointAtLocation = (e) => {
@@ -422,60 +239,13 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
         <h2>Explore {region.name}</h2>
         
         {/* Search Bar */}
-        <div className="map-search-container">
-          <div className="map-search-input-wrapper">
-            <span className="material-symbols-outlined search-icon">search</span>
-            <input
-              type="text"
-              className="map-search-input"
-              placeholder="Search points or places..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleSearch(e.target.value);
-              }}
-              onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
-            />
-            {searchQuery && (
-              <button
-                className="search-clear-btn"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSearchResults([]);
-                  setShowSearchResults(false);
-                }}
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            )}
-          </div>
-
-          {/* Search Results Dropdown */}
-          {showSearchResults && searchResults.length > 0 && (
-            <div className="search-results-dropdown">
-              {searchResults.map((result, index) => (
-                <div
-                  key={`${result.type}-${result.id || index}`}
-                  className="search-result-item"
-                  onClick={() => handleSelectSearchResult(result)}
-                >
-                  <span className="material-symbols-outlined result-icon">
-                    {result.type === 'point' ? getCategoryIcon(result.category) : 'location_on'}
-                  </span>
-                  <div className="result-info">
-                    <div className="result-name">{result.name}</div>
-                    {result.description && (
-                      <div className="result-description">{result.description}</div>
-                    )}
-                    <div className="result-type">
-                      {result.type === 'point' ? '📍 User Point' : '🗺️ Map Location'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <PlaceSearchBar
+          mapInstance={mapInstance}
+          points={filteredPoints}
+          region={region}
+          searchMarker={searchMarker}
+          setSearchMarker={setSearchMarker}
+        />
       </div>
 
       <div className="region-map-container">

@@ -27,8 +27,8 @@ export const deleteUser = async (userId) => {
   return response.data;
 };
 
-export const promoteToMapRanger = async (userId) => {
-  const response = await axiosInstance.put(`/admin/users/${userId}/promote`);
+export const promoteToMapRanger = async (userId, regions = []) => {
+  const response = await axiosInstance.put(`/admin/users/${userId}/promote`, { regions });
   return response.data;
 };
 

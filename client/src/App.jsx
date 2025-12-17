@@ -13,9 +13,6 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import About from './pages/About';
 import UserProfile from './pages/UserProfile';
 import EditProfile from './pages/EditProfile';
-import CreatePoint from './pages/CreatePoint';
-import PointList from './pages/PointList';
-import PointDetails from './pages/PointDetails';
 import GlobalMap from './pages/GlobalMap';
 import RegionPage from './pages/RegionPage';
 import EventsBoard from './pages/EventsBoard';
@@ -66,16 +63,6 @@ function App() {
           <Route path="/region/:slug" element={<RegionPage />} />
           <Route path="/region/:slug/events" element={<EventsBoard />} />
           <Route path="/event/:id" element={<EventDetails />} />
-          <Route path="/points" element={<PointList />} />
-          <Route path="/points/:id" element={<PointDetails />} />
-          <Route
-            path="/create-point"
-            element={
-              <ProtectedRoute>
-                <CreatePoint />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/region/:slug/events/add"
             element={

@@ -4,7 +4,7 @@ import User from '../models/User.js';
 // Create a new point
 export const createPoint = async (req, res) => {
   try {
-    const { title, description, category, lat, lng, images, language, isPrivate } = req.body;
+    const { title, description, category, lat, lng, images, language, isPrivate, regionSlug } = req.body;
 
     // Validate required fields
     if (!title || lat === undefined || lng === undefined) {
@@ -22,6 +22,7 @@ export const createPoint = async (req, res) => {
       images: images || [],
       language: language || 'he',
       isPrivate: isPrivate || false,
+      regionSlug: regionSlug || null,
       createdBy: req.user.id
     });
 

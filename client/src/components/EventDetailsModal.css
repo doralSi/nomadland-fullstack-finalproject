@@ -169,7 +169,7 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   border-radius: 12px;
   margin-right: 20px;
   flex-shrink: 0;
@@ -284,12 +284,12 @@
 }
 
 .event-action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   color: white;
 }
 
 .event-action-btn.primary:hover {
-  transform: translateY(-2px);
+  background: #5568d3;
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
@@ -301,7 +301,6 @@
 
 .event-action-btn.secondary:hover {
   background: #f0f3ff;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 

@@ -1,358 +1,436 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import axios from '../api/axiosInstance';
-import './MapRangerPanel.css';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useRegion } from "../context/RegionContext";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
+import PointSidePanel from "../components/PointSidePanel";
+import EventDetailsModal from "../components/EventDetailsModal";
+import PointsTable from "../components/admin/PointsTable";
+import EventsTable from "../components/admin/EventsTable";
+import Pagination from "../components/admin/Pagination";
+import { getAdminPoints, deletePoint, getAdminEvents, deleteEvent } from "../api/admin";
+import { CATEGORIES } from "../constants/categories";
+import "../styles/AdminDashboard.css";
 
 const MapRangerPanel = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('pendingPoints');
-  const [pendingPoints, setPendingPoints] = useState([]);
-  const [pendingEvents, setPendingEvents] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
+  const { regions } = useRegion();
+  const navigate = useNavigate();
+  
+  // Selected region
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [availableRegions, setAvailableRegions] = useState([]);
+  
+  // Stats
+  const [stats, setStats] = useState(null);
+  
+  // Active tab
+  const [activeTab, setActiveTab] = useState("points");
+  
+  // Points tab
+  const [points, setPoints] = useState([]);
+  const [pointsPage, setPointsPage] = useState(1);
+  const [pointsTotalPages, setPointsTotalPages] = useState(1);
+  const [pointsSearch, setPointsSearch] = useState("");
+  const [pointsCategoryFilter, setPointsCategoryFilter] = useState("");
+  const [pointsStatusFilter, setPointsStatusFilter] = useState("");
+  const [selectedPointForView, setSelectedPointForView] = useState(null);
+  
+  // Events tab
+  const [events, setEvents] = useState([]);
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsTotalPages, setEventsTotalPages] = useState(1);
+  const [eventsSearch, setEventsSearch] = useState("");
+  const [eventsStartDate, setEventsStartDate] = useState("");
+  const [eventsEndDate, setEventsEndDate] = useState("");
+  const [selectedEventForView, setSelectedEventForView] = useState(null);
+  
+  const [loading, setLoading] = useState(false);
 
-  const isAdmin = user?.role === 'admin';
-  const isMapRangerOrAdmin = user?.role === 'mapRanger' || user?.role === 'admin';
-
+  // Check if user is map ranger or admin
   useEffect(() => {
-    // Check permissions
-    if (!isMapRangerOrAdmin) {
-      navigate('/');
-      return;
+    if (!user || (user.role !== "mapRanger" && user.role !== "admin")) {
+      navigate("/");
     }
+  }, [user, navigate]);
 
-    fetchData();
-  }, [activeTab, isMapRangerOrAdmin, navigate]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (activeTab === 'pendingPoints') {
-        const response = await axios.get('/map-ranger/pending/points');
-        setPendingPoints(response.data);
-      } else if (activeTab === 'pendingEvents') {
-        const response = await axios.get('/map-ranger/pending/events');
-        setPendingEvents(response.data);
-      } else if (activeTab === 'users' && isAdmin) {
-        const response = await axios.get('/map-ranger/users');
-        setUsers(response.data);
+  // Load user's regions
+  useEffect(() => {
+    if (user) {
+      // If admin, show all regions. If mapRanger, show only managed regions
+      if (user.role === "admin") {
+        setAvailableRegions(regions);
+        if (regions.length > 0 && !selectedRegion) {
+          setSelectedRegion(regions[0].slug);
+        }
+      } else if (user.managedRegions) {
+        const userRegions = regions.filter(r => user.managedRegions.includes(r.slug));
+        setAvailableRegions(userRegions);
+        if (userRegions.length > 0 && !selectedRegion) {
+          setSelectedRegion(userRegions[0].slug);
+        }
       }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(err.response?.data?.message || 'Failed to load data');
+    }
+  }, [user, regions, selectedRegion]);
+
+  // Load stats when region changes
+  useEffect(() => {
+    if (selectedRegion) {
+      loadStats();
+    }
+  }, [selectedRegion]);
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (selectedRegion) {
+      if (activeTab === "points") {
+        loadPoints();
+      } else if (activeTab === "events") {
+        loadEvents();
+      }
+    }
+  }, [
+    activeTab,
+    selectedRegion,
+    pointsPage,
+    pointsSearch,
+    pointsCategoryFilter,
+    pointsStatusFilter,
+    eventsPage,
+    eventsSearch,
+    eventsStartDate,
+    eventsEndDate,
+  ]);
+
+  const loadStats = async () => {
+    try {
+      const response = await axiosInstance.get(`/map-ranger/stats/${selectedRegion}`);
+      setStats(response.data);
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
+
+  const loadPoints = async () => {
+    setLoading(true);
+    try {
+      const data = await getAdminPoints({
+        page: pointsPage,
+        search: pointsSearch,
+        region: selectedRegion,
+        category: pointsCategoryFilter,
+        status: pointsStatusFilter,
+      });
+      setPoints(data.points);
+      setPointsTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error loading points:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprovePoint = async (pointId) => {
+  const loadEvents = async () => {
+    setLoading(true);
     try {
-      await axios.patch(`/map-ranger/points/${pointId}/approve`);
-      setSuccessMessage('Point approved successfully');
-      setPendingPoints(pendingPoints.filter(p => p._id !== pointId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to approve point');
+      // Convert region slug to region ID
+      const selectedRegionObj = regions.find(r => r.slug === selectedRegion);
+      const regionId = selectedRegionObj ? selectedRegionObj._id : "";
+      
+      const data = await getAdminEvents({
+        page: eventsPage,
+        search: eventsSearch,
+        region: regionId,
+        startDate: eventsStartDate,
+        endDate: eventsEndDate,
+      });
+      setEvents(data.events);
+      setEventsTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error loading events:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRejectPoint = async (pointId) => {
+  const loadData = () => {
+    if (activeTab === "points") {
+      loadPoints();
+    } else if (activeTab === "events") {
+      loadEvents();
+    }
+    loadStats();
+  };
+
+  const handlePointsSearchChange = (e) => {
+    setPointsSearch(e.target.value);
+    setPointsPage(1);
+  };
+
+  const handleEventsSearchChange = (e) => {
+    setEventsSearch(e.target.value);
+    setEventsPage(1);
+  };
+
+  const handleTogglePrivacy = async (pointId, isPrivate) => {
     try {
-      await axios.patch(`/map-ranger/points/${pointId}/reject`);
-      setSuccessMessage('Point rejected');
-      setPendingPoints(pendingPoints.filter(p => p._id !== pointId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reject point');
+      await axiosInstance.patch(`/points/${pointId}/toggle-privacy`);
+      alert(`Point ${isPrivate ? "made public" : "made private"} successfully`);
+      loadPoints();
+    } catch (error) {
+      console.error("Error toggling privacy:", error);
+      alert(error.response?.data?.message || "Failed to update point");
     }
   };
 
   const handleDeletePoint = async (pointId) => {
-    if (!window.confirm('Are you sure you want to delete this point?')) return;
-    
-    try {
-      await axios.delete(`/map-ranger/points/${pointId}`);
-      setSuccessMessage('Point deleted successfully');
-      setPendingPoints(pendingPoints.filter(p => p._id !== pointId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete point');
+    if (!window.confirm("Are you sure you want to delete this point?")) {
+      return;
     }
-  };
-
-  const handleApproveEvent = async (eventId) => {
     try {
-      await axios.patch(`/map-ranger/events/${eventId}/approve`);
-      setSuccessMessage('Event approved successfully');
-      setPendingEvents(pendingEvents.filter(e => e._id !== eventId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to approve event');
-    }
-  };
-
-  const handleRejectEvent = async (eventId) => {
-    try {
-      await axios.patch(`/map-ranger/events/${eventId}/reject`);
-      setSuccessMessage('Event rejected');
-      setPendingEvents(pendingEvents.filter(e => e._id !== eventId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reject event');
+      await deletePoint(pointId);
+      alert("Point deleted successfully");
+      loadPoints();
+    } catch (error) {
+      console.error("Error deleting point:", error);
+      alert(error.response?.data?.message || "Failed to delete point");
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
-    
+    if (!window.confirm("Are you sure you want to delete this event?")) {
+      return;
+    }
     try {
-      await axios.delete(`/map-ranger/events/${eventId}`);
-      setSuccessMessage('Event deleted successfully');
-      setPendingEvents(pendingEvents.filter(e => e._id !== eventId));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete event');
+      await deleteEvent(eventId);
+      alert("Event deleted successfully");
+      loadEvents();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      alert(error.response?.data?.message || "Failed to delete event");
     }
   };
 
-  const handlePromoteUser = async (userId) => {
-    try {
-      await axios.patch(`/map-ranger/users/${userId}/promote`);
-      setSuccessMessage('User promoted to Map Ranger');
-      fetchData();
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to promote user');
-    }
-  };
-
-  const handleDemoteUser = async (userId) => {
-    try {
-      await axios.patch(`/map-ranger/users/${userId}/demote`);
-      setSuccessMessage('User demoted to regular user');
-      fetchData();
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to demote user');
-    }
-  };
-
-  const handleEditPointLocation = (pointId) => {
-    navigate(`/map-ranger/edit-point/${pointId}`);
-  };
-
-  if (!isMapRangerOrAdmin) {
+  if (!user || (user.role !== "mapRanger" && user.role !== "admin")) {
     return null;
   }
 
   return (
-    <div className="map-ranger-panel">
-      <div className="panel-header">
-        <h1>🗺️ Map Ranger Panel</h1>
-        <p className="panel-subtitle">Moderate and manage NomadLand content</p>
+    <div className="admin-dashboard">
+      <div className="dashboard-header">
+        <h1>Map Ranger Panel</h1>
+        
+        {/* Region Selector */}
+        <div className="region-selector" style={{ marginTop: "1rem", marginBottom: "2rem" }}>
+          <label htmlFor="region-select" style={{ marginRight: "0.5rem", fontWeight: "500" }}>
+            Select Region: 
+          </label>
+          <select
+            id="region-select"
+            value={selectedRegion}
+            onChange={(e) => {
+              setSelectedRegion(e.target.value);
+              setPointsPage(1);
+              setEventsPage(1);
+            }}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "4px",
+              border: "1px solid #ddd",
+              fontSize: "1rem",
+              minWidth: "200px"
+            }}
+          >
+            {availableRegions.map((region) => (
+              <option key={region.slug} value={region.slug}>
+                {region.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {/* Dashboard Stats */}
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card">
+            <h3>Points</h3>
+            <p className="stat-number">{stats.pointsCount || 0}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Events</h3>
+            <p className="stat-number">{stats.eventsCount || 0}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Reviews</h3>
+            <p className="stat-number">{stats.reviewsCount || 0}</p>
+          </div>
+          <div className="stat-card">
+            <h3>Rangers</h3>
+            <p className="stat-number">{stats.rangersCount || 0}</p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="tabs">
         <button
-          className={activeTab === 'pendingPoints' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('pendingPoints')}
+          onClick={() => setActiveTab("points")}
+          className={`tab-button ${activeTab === "points" ? "active" : ""}`}
         >
-          Pending Points ({pendingPoints.length})
+          Points
         </button>
         <button
-          className={activeTab === 'pendingEvents' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('pendingEvents')}
+          onClick={() => setActiveTab("events")}
+          className={`tab-button ${activeTab === "events" ? "active" : ""}`}
         >
-          Pending Events ({pendingEvents.length})
+          Events
         </button>
-        {isAdmin && (
-          <button
-            className={activeTab === 'users' ? 'tab active' : 'tab'}
-            onClick={() => setActiveTab('users')}
-          >
-            User Management
-          </button>
-        )}
       </div>
 
-      {/* Messages */}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-      {error && <div className="error-message">{error}</div>}
+      {/* Points Tab */}
+      {activeTab === "points" && (
+        <div className="tab-content">
+          <div className="filters-bar">
+            <input
+              type="text"
+              placeholder="Search by point name..."
+              value={pointsSearch}
+              onChange={handlePointsSearchChange}
+              className="search-input"
+            />
+            <select
+              value={pointsCategoryFilter}
+              onChange={(e) => {
+                setPointsCategoryFilter(e.target.value);
+                setPointsPage(1);
+              }}
+              className="filter-select"
+            >
+              <option value="">All Categories</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.key} value={cat.key}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={pointsStatusFilter}
+              onChange={(e) => {
+                setPointsStatusFilter(e.target.value);
+                setPointsPage(1);
+              }}
+              className="filter-select"
+            >
+              <option value="">All Types</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
 
-      {/* Content */}
-      <div className="panel-content">
-        {loading ? (
-          <div className="loading">Loading...</div>
-        ) : (
-          <>
-            {/* Pending Points Tab */}
-            {activeTab === 'pendingPoints' && (
-              <div className="points-list">
-                {pendingPoints.length === 0 ? (
-                  <p className="no-data">No pending points</p>
-                ) : (
-                  pendingPoints.map(point => (
-                    <div key={point._id} className="moderation-card">
-                      <div className="card-header">
-                        <h3>{point.title}</h3>
-                        <span className="status-badge pending">Pending</span>
-                      </div>
-                      {point.images && point.images.length > 0 && (
-                        <img src={point.images[0]} alt={point.title} className="card-image" />
-                      )}
-                      <div className="card-body">
-                        <p><strong>Description:</strong> {point.description || 'N/A'}</p>
-                        <p><strong>Category:</strong> {point.category || 'N/A'}</p>
-                        <p><strong>Location:</strong> {point.lat}, {point.lng}</p>
-                        <p><strong>Created by:</strong> {point.createdBy?.name || 'Unknown'} ({point.createdBy?.email})</p>
-                      </div>
-                      <div className="card-actions">
-                        <button 
-                          className="btn btn-approve"
-                          onClick={() => handleApprovePoint(point._id)}
-                        >
-                          ✓ Approve
-                        </button>
-                        <button 
-                          className="btn btn-reject"
-                          onClick={() => handleRejectPoint(point._id)}
-                        >
-                          ✗ Reject
-                        </button>
-                        <button 
-                          className="btn btn-edit"
-                          onClick={() => handleEditPointLocation(point._id)}
-                        >
-                          📍 Edit Location
-                        </button>
-                        <button 
-                          className="btn btn-delete"
-                          onClick={() => handleDeletePoint(point._id)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+          {loading ? (
+            <div className="loading">Loading...</div>
+          ) : (
+            <>
+              <PointsTable
+                points={points}
+                onTogglePrivacy={handleTogglePrivacy}
+                onView={setSelectedPointForView}
+                onDelete={handleDeletePoint}
+                showRegion={false}
+              />
 
-            {/* Pending Events Tab */}
-            {activeTab === 'pendingEvents' && (
-              <div className="events-list">
-                {pendingEvents.length === 0 ? (
-                  <p className="no-data">No pending events</p>
-                ) : (
-                  pendingEvents.map(event => (
-                    <div key={event._id} className="moderation-card">
-                      <div className="card-header">
-                        <h3>{event.title}</h3>
-                        <span className="status-badge pending">Under Review</span>
-                      </div>
-                      {event.imageUrl && (
-                        <img src={event.imageUrl} alt={event.title} className="card-image" />
-                      )}
-                      <div className="card-body">
-                        <p><strong>Description:</strong> {event.description}</p>
-                        <p><strong>Region:</strong> {event.region?.name || 'Unknown'}</p>
-                        <p><strong>Start Date:</strong> {new Date(event.startDate).toLocaleDateString()}</p>
-                        <p><strong>End Date:</strong> {new Date(event.endDate).toLocaleDateString()}</p>
-                        <p><strong>Time:</strong> {event.time}</p>
-                        <p><strong>Cost:</strong> {event.cost || 'Free'}</p>
-                        <p><strong>Repeat:</strong> {event.repeat}</p>
-                        <p><strong>Language:</strong> {event.language}</p>
-                        <p><strong>Created by:</strong> {event.createdBy?.name || 'Unknown'} ({event.createdBy?.email})</p>
-                      </div>
-                      <div className="card-actions">
-                        <button 
-                          className="btn btn-approve"
-                          onClick={() => handleApproveEvent(event._id)}
-                        >
-                          ✓ Approve
-                        </button>
-                        <button 
-                          className="btn btn-reject"
-                          onClick={() => handleRejectEvent(event._id)}
-                        >
-                          ✗ Reject
-                        </button>
-                        <button 
-                          className="btn btn-delete"
-                          onClick={() => handleDeleteEvent(event._id)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+              <Pagination
+                currentPage={pointsPage}
+                totalPages={pointsTotalPages}
+                onPageChange={setPointsPage}
+              />
+            </>
+          )}
+        </div>
+      )}
 
-            {/* Users Management Tab */}
-            {activeTab === 'users' && isAdmin && (
-              <div className="users-list">
-                {users.length === 0 ? (
-                  <p className="no-data">No users found</p>
-                ) : (
-                  <table className="users-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map(u => (
-                        <tr key={u._id}>
-                          <td>{u.name}</td>
-                          <td>{u.email}</td>
-                          <td>
-                            <span className={`role-badge role-${u.role}`}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td>
-                            {u.role === 'user' && (
-                              <button 
-                                className="btn btn-small btn-promote"
-                                onClick={() => handlePromoteUser(u._id)}
-                              >
-                                Promote to Map Ranger
-                              </button>
-                            )}
-                            {u.role === 'mapRanger' && (
-                              <button 
-                                className="btn btn-small btn-demote"
-                                onClick={() => handleDemoteUser(u._id)}
-                              >
-                                Demote to User
-                              </button>
-                            )}
-                            {u.role === 'admin' && (
-                              <span className="admin-label">Admin (Protected)</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      {/* Events Tab */}
+      {activeTab === "events" && (
+        <div className="tab-content">
+          <div className="filters-bar">
+            <input
+              type="text"
+              placeholder="Search by event name..."
+              value={eventsSearch}
+              onChange={handleEventsSearchChange}
+              className="search-input"
+            />
+            <input
+              type="date"
+              value={eventsStartDate}
+              onChange={(e) => {
+                setEventsStartDate(e.target.value);
+                setEventsPage(1);
+              }}
+              className="filter-select"
+              placeholder="Start Date"
+            />
+            <input
+              type="date"
+              value={eventsEndDate}
+              onChange={(e) => {
+                setEventsEndDate(e.target.value);
+                setEventsPage(1);
+              }}
+              className="filter-select"
+              placeholder="End Date"
+            />
+          </div>
+
+          {loading ? (
+            <div className="loading">Loading...</div>
+          ) : (
+            <>
+              <EventsTable
+                events={events}
+                onView={setSelectedEventForView}
+                onDelete={handleDeleteEvent}
+                showRegion={false}
+              />
+
+              <Pagination
+                currentPage={eventsPage}
+                totalPages={eventsTotalPages}
+                onPageChange={setEventsPage}
+              />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Point View Modal */}
+      {selectedPointForView && (
+        <div className="modal-overlay" onClick={() => setSelectedPointForView(null)}>
+          <div className="point-modal-container" onClick={(e) => e.stopPropagation()}>
+            <PointSidePanel
+              point={selectedPointForView}
+              onClose={() => setSelectedPointForView(null)}
+              onToggleFavorite={() => {}}
+              isFavorite={false}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Event View Modal */}
+      {selectedEventForView && (
+        <EventDetailsModal
+          event={selectedEventForView}
+          region={selectedEventForView.region}
+          onClose={() => setSelectedEventForView(null)}
+          onShowOnMap={() => {}}
+          onEventDeleted={() => {
+            setSelectedEventForView(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

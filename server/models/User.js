@@ -42,6 +42,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  rangerRegions: [{
+    type: String, // Will store region slugs
+  }],
   favoritePoints: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Point'

@@ -58,6 +58,14 @@ const pointSchema = new mongoose.Schema({
   averageAccessibilityDisability: {
     type: Number,
     default: null
+  },
+  region: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Region'
+  },
+  regionSlug: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true,

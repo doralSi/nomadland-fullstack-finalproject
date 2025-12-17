@@ -1,10 +1,49 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import Joi from "joi";
 import User from "../models/User.js";
+
+// Joi validation schemas
+const registerSchema = Joi.object({
+  name: Joi.string().min(2).max(50).required().messages({
+    'string.min': 'Name must be at least 2 characters',
+    'string.max': 'Name must not exceed 50 characters',
+    'any.required': 'Name is required'
+  }),
+  email: Joi.string().email().required().messages({
+    'string.email': 'Please provide a valid email',
+    'any.required': 'Email is required'
+  }),
+  password: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d.*\d.*\d.*\d)(?=.*[!@#$%^&*\-_])/)
+    .required()
+    .messages({
+      'string.min': 'Password must be at least 8 characters',
+      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, four digits, and one special character (!@#$%^&*-_)',
+      'any.required': 'Password is required'
+    })
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'string.email': 'Please provide a valid email',
+    'any.required': 'Email is required'
+  }),
+  password: Joi.string().required().messages({
+    'any.required': 'Password is required'
+  })
+});
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    // Joi validation
+    const { error, value } = registerSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { name, email, password } = value;
 
     // בדיקה אם המשתמש כבר קיים
     const existing = await User.findOne({ email });
@@ -42,7 +81,13 @@ export const registerUser = async (req, res) => {
 // פונקציית התחברות
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Joi validation
+    const { error, value } = loginSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { email, password } = value;
 
     // בדיקת אימייל
     const user = await User.findOne({ email });

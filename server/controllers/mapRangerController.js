@@ -290,3 +290,54 @@ export const demoteToUser = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// Get stats for a specific region (Map Ranger)
+export const getRegionStats = async (req, res) => {
+  try {
+    const { regionSlug } = req.params;
+    
+    // Get region ID from slug
+    const Region = (await import('../models/Region.js')).default;
+    const region = await Region.findOne({ slug: regionSlug });
+    
+    if (!region) {
+      return res.status(404).json({ message: 'Region not found' });
+    }
+
+    // Count points in region - if admin, count all points including private ones
+    const pointsQuery = { regionSlug: regionSlug };
+    if (req.user.role !== 'admin') {
+      pointsQuery.isPrivate = false;
+    }
+    const pointsCount = await Point.countDocuments(pointsQuery);
+
+    // Count events in region
+    const eventsCount = await EventTemplate.countDocuments({ 
+      region: region._id 
+    });
+
+    // Count reviews in region (reviews on points in this region)
+    const Review = (await import('../models/Review.js')).default;
+    const pointsInRegion = await Point.find({ regionSlug: regionSlug }).select('_id');
+    const pointIds = pointsInRegion.map(p => p._id);
+    const reviewsCount = await Review.countDocuments({ 
+      point: { $in: pointIds } 
+    });
+
+    // Count rangers for this region
+    const rangersCount = await User.countDocuments({ 
+      role: 'mapRanger',
+      managedRegions: regionSlug 
+    });
+
+    res.json({
+      pointsCount,
+      eventsCount,
+      reviewsCount,
+      rangersCount
+    });
+  } catch (error) {
+    console.error('Get region stats error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

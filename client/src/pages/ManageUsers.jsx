@@ -75,7 +75,7 @@ const ManageUsers = () => {
   return (
     <div className="manage-users">
       <div className="users-header">
-        <h1>👥 User Management</h1>
+        <h1>User Management</h1>
         <p className="users-subtitle">Promote or demote users to Map Ranger role</p>
       </div>
 

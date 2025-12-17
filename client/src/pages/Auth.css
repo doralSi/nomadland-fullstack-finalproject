@@ -53,6 +53,12 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.password-hint {
+  color: #666;
+  font-size: 0.75rem;
+  margin-top: -0.25rem;
+}
+
 .auth-form button.btn {
   margin-top: 1rem;
   width: 100% !important;
