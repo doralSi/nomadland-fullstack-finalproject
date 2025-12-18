@@ -106,6 +106,33 @@ export const demoteUser = async (userId) => {
   return response.data;
 };
 
+// ==================== POINTS & EVENTS LISTING ====================
+
+/**
+ * Get all points with filtering (for Map Ranger panel)
+ */
+export const getPoints = async (params) => {
+  const response = await axiosInstance.get('/map-ranger/points', { params });
+  return response.data;
+};
+
+/**
+ * Get all events with filtering (for Map Ranger panel)
+ */
+export const getEvents = async (params) => {
+  const response = await axiosInstance.get('/map-ranger/events', { params });
+  return response.data;
+};
+
+/**
+ * Get region statistics
+ * @param {string} regionSlug - The region slug
+ */
+export const getRegionStats = async (regionSlug) => {
+  const response = await axiosInstance.get(`/map-ranger/stats/${regionSlug}`);
+  return response.data;
+};
+
 // Export all functions as named exports
 export default {
   getPendingPoints,
@@ -119,5 +146,8 @@ export default {
   deleteEvent,
   getUsers,
   promoteUser,
-  demoteUser
+  demoteUser,
+  getPoints,
+  getEvents,
+  getRegionStats
 };

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserRegions } from '../api/personalMaps';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import './MyMaps.css';
 
 const MyMaps = () => {
@@ -10,6 +14,9 @@ const MyMaps = () => {
   const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   useEffect(() => {
     if (user) {
@@ -32,17 +39,30 @@ const MyMaps = () => {
   };
 
   const handleDelete = async (mapId) => {
-    if (!window.confirm('Are you sure you want to delete this map?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Map',
+      message: 'Are you sure you want to delete this map?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await axios.delete(`/personal-maps/${mapId}`);
-      alert('Map deleted successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Map deleted successfully'
+      });
       fetchMyMaps(); // Refresh list
     } catch (err) {
       console.error('Error deleting map:', err);
-      alert(err.response?.data?.message || 'Failed to delete map');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to delete map'
+      });
     }
   };
 
@@ -80,6 +100,25 @@ const MyMaps = () => {
 
   return (
     <div className="my-maps-container">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <div className="my-maps-header">
         <h1>My NomadLand Maps</h1>
         <p>Your personal journey across digital nomad communities</p>

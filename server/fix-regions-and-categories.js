@@ -24,32 +24,13 @@ const regionBounds = {
   },
   'bansko': {
     name: 'Bansko',
-    minLat: 41.80, maxLat: 41.86,
-    minLng: 23.45, maxLng: 23.52
+    minLat: 41.70, maxLat: 42.25,
+    minLng: 23.30, maxLng: 23.60
   }
 };
 
-// Category normalization
-const categoryMap = {
-  'beach': 'Beaches',
-  'beaches': 'Beaches',
-  'market': 'Markets',
-  'markets': 'Markets',
-  'trail': 'Trails',
-  'trails': 'Trails',
-  'culture': 'Culture',
-  'restaurant': 'Restaurants',
-  'restaurants': 'Restaurants',
-  'cafe': 'Cafes',
-  'cafes': 'Cafes',
-  'activity': 'Activities',
-  'activities': 'Activities',
-  'viewpoint': 'Viewpoints',
-  'viewpoints': 'Viewpoints',
-  'coworking': 'Coworking',
-  'nature': 'Nature',
-  'other': 'Other'
-};
+// Category normalization - disabled to keep client keys
+const categoryMap = {};
 
 function findRegionForPoint(lat, lng) {
   for (const [slug, bounds] of Object.entries(regionBounds)) {

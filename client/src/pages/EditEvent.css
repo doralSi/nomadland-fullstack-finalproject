@@ -244,10 +244,10 @@
 }
 
 .day-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.8rem 1.2rem;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 12px 16px !important;
   background: #f8f9fa;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
@@ -262,8 +262,11 @@
 
 .day-checkbox input[type="checkbox"] {
   cursor: pointer;
-  width: 18px;
-  height: 18px;
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  accent-color: #667eea !important;
 }
 
 .day-checkbox input[type="checkbox"]:checked + span {

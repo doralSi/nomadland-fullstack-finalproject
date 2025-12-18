@@ -3,6 +3,10 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import './EventDetails.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -15,6 +19,9 @@ const EventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   const eventDate = searchParams.get('date');
 
@@ -41,18 +48,31 @@ const EventDetails = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('האם אתה בטוח שברצונך למחוק את האירוע?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'מחיקת אירוע',
+      message: 'האם אתה בטוח שברצונך למחוק את האירוע?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול'
+    });
+
+    if (!confirmed) return;
 
     try {
       setDeleting(true);
       await axios.delete(`/events/${id}`);
-      alert('האירוע נמחק בהצלחה');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'הצלחה',
+        message: 'האירוע נמחק בהצלחה'
+      });
       navigate(`/region/${event.region.slug}/events`);
     } catch (err) {
       console.error('Error deleting event:', err);
-      alert(err.response?.data?.message || 'Failed to delete event');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'שגיאה',
+        message: err.response?.data?.message || 'Failed to delete event'
+      });
     } finally {
       setDeleting(false);
     }
@@ -108,6 +128,24 @@ const EventDetails = () => {
 
   return (
     <div className="event-details-container">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
       {/* Header */}
       <div className="event-details-header">
         <button onClick={handleBack} className="back-btn">

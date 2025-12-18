@@ -16,6 +16,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const logoutTimerRef = React.useRef(null);
+
+  // Auto logout after 4 hours of inactivity
+  const INACTIVITY_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
+  const resetLogoutTimer = React.useCallback(() => {
+    // Clear existing timer
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+    }
+
+    // Set new timer only if user is logged in
+    if (user) {
+      logoutTimerRef.current = setTimeout(() => {
+        logout();
+        // Show alert to user that they were logged out
+        alert('You have been logged out due to inactivity. Please log in again.');
+      }, INACTIVITY_TIMEOUT);
+    }
+  }, [user]);
 
   // Check if user is already logged in on mount
   useEffect(() => {
@@ -26,6 +46,38 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
+
+  // Setup activity listeners and logout timer
+  useEffect(() => {
+    if (!user) {
+      // Clear timer if user logs out
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Start the logout timer
+    resetLogoutTimer();
+
+    // Activity events that reset the timer
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetLogoutTimer);
+    });
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetLogoutTimer);
+      });
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+    };
+  }, [user, resetLogoutTimer]);
 
   const login = async (email, password) => {
     try {
@@ -62,6 +114,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear the logout timer
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
     removeToken();
     setUser(null);
     setError(null);

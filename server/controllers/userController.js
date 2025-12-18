@@ -37,6 +37,8 @@ export const login = async (req, res) => {
                 id: user._id,
                 email: user.email,
                 name: user.name,
+                role: user.role,
+                rangerRegions: user.rangerRegions || []
             }
         });
 
@@ -50,7 +52,7 @@ export const login = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, password } = req.body;
+        const { name, password, currentPassword } = req.body;
 
         const user = await User.findById(userId);
 
@@ -65,9 +67,24 @@ export const updateUserProfile = async (req, res) => {
 
         // Update password if provided
         if (password) {
-            if (password.length < 6) {
-                return res.status(400).json({ message: "Password must be at least 6 characters" });
+            // Check if current password is provided
+            if (!currentPassword) {
+                return res.status(400).json({ message: "Current password is required to change password" });
             }
+
+            // Verify current password
+            const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+            if (!isPasswordValid) {
+                return res.status(400).json({ message: "Current password is incorrect" });
+            }
+
+            // Validate new password
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d.*\d.*\d.*\d)(?=.*[!@#$%^&*\-_]).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                return res.status(400).json({ message: "Password must be at least 8 characters and contain: 1 uppercase letter, 1 lowercase letter, 4 digits, and 1 special character (!@#$%^&*-_)" });
+            }
+
+            // Hash and update password
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
         }

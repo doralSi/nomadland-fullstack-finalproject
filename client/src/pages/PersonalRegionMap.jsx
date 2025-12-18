@@ -7,10 +7,15 @@ import { deletePoint, updatePoint, removeFromFavorites } from '../api/points';
 import { useAuth } from '../context/AuthContext';
 import { getCategoryIcon, createPersonalPointIcon, createPointIcon } from '../utils/mapIcons';
 import { MapViewController } from '../components/map/MapHelpers';
+import { toast } from 'react-toastify';
 import '../utils/leafletConfig';
 import PointSidePanel from '../components/PointSidePanel';
 import RegionHero from '../components/RegionHero';
 import axiosInstance from '../api/axiosInstance';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import './PersonalRegionMap.css';
 
 const PersonalRegionMap = () => {
@@ -27,6 +32,9 @@ const PersonalRegionMap = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [mapInstance, setMapInstance] = useState(null);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   useEffect(() => {
     if (user && regionSlug) {
@@ -52,71 +60,102 @@ const PersonalRegionMap = () => {
   };
 
   const handleDeletePoint = async (pointId) => {
-    if (!window.confirm('Are you sure you want to delete this point?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Point',
+      message: 'Are you sure you want to delete this point?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await deletePoint(pointId);
-      alert('Point deleted successfully');
+      toast.success('Point deleted successfully');
       fetchRegionData();
     } catch (err) {
       console.error('Error deleting point:', err);
-      alert(err.response?.data?.message || 'Failed to delete point');
+      toast.error(err.response?.data?.message || 'Failed to delete point');
     }
   };
 
   const handleEditPoint = async (pointId, updates) => {
     try {
       await updatePoint(pointId, updates);
-      alert('Point updated successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Point updated successfully'
+      });
       setEditingPoint(null);
       fetchRegionData();
     } catch (err) {
       console.error('Error updating point:', err);
-      alert(err.response?.data?.message || 'Failed to update point');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to update point'
+      });
     }
   };
 
   const handleRemoveFromFavorites = async (pointId) => {
-    if (!window.confirm('Remove this point from your favorites?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Remove Favorite',
+      message: 'Remove this point from your favorites?',
+      confirmText: 'Remove',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await removeFromFavorites(pointId);
-      alert('Removed from favorites');
+      toast.success('Removed from favorites');
       fetchRegionData();
     } catch (err) {
       console.error('Error removing favorite:', err);
-      alert(err.response?.data?.message || 'Failed to remove favorite');
+      toast.error(err.response?.data?.message || 'Failed to remove favorite');
     }
   };
 
   const handleEditReview = async (reviewId, updates) => {
     try {
       await axiosInstance.put(`/reviews/${reviewId}`, updates);
-      alert('Review updated successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Review updated successfully'
+      });
       setEditingReview(null);
       fetchRegionData();
     } catch (err) {
       console.error('Error updating review:', err);
-      alert(err.response?.data?.message || 'Failed to update review');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to update review'
+      });
     }
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Review',
+      message: 'Are you sure you want to delete this review?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await axiosInstance.delete(`/reviews/${reviewId}`);
-      alert('Review deleted successfully');
+      toast.success('Review deleted successfully');
       fetchRegionData();
     } catch (err) {
       console.error('Error deleting review:', err);
-      alert(err.response?.data?.message || 'Failed to delete review');
+      toast.error(err.response?.data?.message || 'Failed to delete review');
     }
   };
 
@@ -166,6 +205,25 @@ const PersonalRegionMap = () => {
 
   return (
     <div className="personal-region-map-container">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       {/* Hero Section */}
       <RegionHero 
         name={region.name}

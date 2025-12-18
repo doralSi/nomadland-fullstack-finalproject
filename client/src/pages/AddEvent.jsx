@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import axios from '../api/axiosInstance';
 import { useRegion } from '../context/RegionContext';
+import { toast } from 'react-toastify';
 import LocationMarker from '../components/map/LocationMarker';
 import { isPointInRegion, getLocationWarning } from '../utils/regionValidation';
 import '../utils/leafletConfig';
@@ -175,7 +176,7 @@ const AddEvent = () => {
       // Create event
       const response = await axios.post('/events', eventData);
       
-      alert('האירוע נוצר בהצלחה! הוא ממתין לאישור.');
+      toast.success('האירוע נוצר בהצלחה! הוא ממתין לאישור.');
       navigate(`/region/${slug}/events`);
     } catch (err) {
       console.error('Create event error:', err);

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from '../api/axiosInstance';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import './ManageUsers.css';
 
 const ManageUsers = () => {
@@ -11,6 +15,9 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   const isAdmin = user?.role === 'admin';
 
@@ -39,28 +46,56 @@ const ManageUsers = () => {
   };
 
   const handlePromoteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to promote this user to Map Ranger?')) return;
+    const confirmed = await confirmDialog.confirm({
+      title: 'Promote to Map Ranger',
+      message: 'Are you sure you want to promote this user to Map Ranger?',
+      confirmText: 'Promote',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
     
     try {
       await axios.patch(`/map-ranger/users/${userId}/promote`);
-      setSuccessMessage('User promoted to Map Ranger successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'User promoted to Map Ranger successfully'
+      });
       fetchUsers();
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to promote user');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to promote user'
+      });
     }
   };
 
   const handleDemoteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to demote this user to regular user?')) return;
+    const confirmed = await confirmDialog.confirm({
+      title: 'Demote to Regular User',
+      message: 'Are you sure you want to demote this user to regular user?',
+      confirmText: 'Demote',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
     
     try {
       await axios.patch(`/map-ranger/users/${userId}/demote`);
-      setSuccessMessage('User demoted to regular user successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'User demoted to regular user successfully'
+      });
       fetchUsers();
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to demote user');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to demote user'
+      });
     }
   };
 
@@ -74,6 +109,25 @@ const ManageUsers = () => {
 
   return (
     <div className="manage-users">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <div className="users-header">
         <h1>User Management</h1>
         <p className="users-subtitle">Promote or demote users to Map Ranger role</p>

@@ -59,6 +59,42 @@
   margin-top: -0.25rem;
 }
 
+/* Password input wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 45px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+}
+
+.password-toggle-btn:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.password-toggle-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
 .auth-form button.btn {
   margin-top: 1rem;
   width: 100% !important;
@@ -256,4 +292,233 @@ body.dark-mode .profile-field label {
 body.dark-mode .disabled-input {
   background: #1a1a1a !important;
   color: #888 !important;
+}
+
+/* Forgot Password Link */
+.auth-forgot-password {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.auth-forgot-password a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.auth-forgot-password a:hover {
+  color: #5568d3;
+  text-decoration: underline;
+}
+
+/* Auth Header (for ForgotPassword/ResetPassword) */
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-icon.success-icon {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.auth-icon .material-symbols-outlined {
+  font-size: 40px;
+  color: white;
+}
+
+.auth-header h1 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Info Box */
+.info-box {
+  background: #e7f3ff;
+  border-right: 4px solid #2196f3;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.info-box p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1976d2;
+}
+
+.info-box .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* Auth Content */
+.auth-content {
+  margin-top: 1.5rem;
+}
+
+/* Link Styles */
+.link-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.link-primary:hover {
+  color: #5568d3;
+}
+
+.link-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.link-secondary:hover {
+  color: #667eea;
+}
+
+.link-secondary .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* Button Full Width */
+.btn-full {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Spinning Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Password Input Wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  flex: 1;
+  padding-left: 12px;
+}
+
+.password-toggle {
+  position: absolute;
+  left: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+  color: #667eea;
+}
+
+.password-toggle .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* Password Requirements */
+.password-requirements {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.password-requirements > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.password-requirements .valid {
+  color: #28a745;
+}
+
+.password-requirements .invalid {
+  color: #dc3545;
+}
+
+.password-requirements .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* Dark Mode */
+body.dark-mode .auth-header h1 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .auth-header p {
+  color: #aaa;
+}
+
+body.dark-mode .info-box {
+  background: #1e3a5f;
+  border-right-color: #2196f3;
+}
+
+body.dark-mode .info-box p {
+  color: #64b5f6;
+}
+
+body.dark-mode .link-secondary {
+  color: #aaa;
+}
+
+body.dark-mode .link-secondary:hover {
+  color: #667eea;
+}
+
+body.dark-mode .password-toggle {
+  color: #aaa;
+}
+
+body.dark-mode .password-toggle:hover {
+  color: #667eea;
 }

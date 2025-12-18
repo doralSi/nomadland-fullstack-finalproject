@@ -25,12 +25,20 @@ import {
   getAdminEvents,
   deleteEvent,
 } from "../api/admin";
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import "../styles/AdminDashboard.css";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { regions } = useRegion();
   const navigate = useNavigate();
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
   
   // Stats
   const [stats, setStats] = useState(null);
@@ -178,39 +186,56 @@ const AdminDashboard = () => {
   };
 
   const handleFreezeUser = async (userId) => {
-    if (window.confirm("האם אתה בטוח שברצונך להקפיא את המשתמש?")) {
-      try {
-        await freezeUser(userId);
-        loadUsers();
-        loadStats();
-      } catch (error) {
-        console.error("Error freezing user:", error);
-        alert("Error freezing user");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Freeze User',
+      message: "האם אתה בטוח שברצונך להקפיא את המשתמש?",
+      confirmText: 'Freeze',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await freezeUser(userId);
+      toast.success('User frozen successfully');
+      loadUsers();
+      loadStats();
+    } catch (error) {
+      console.error("Error freezing user:", error);
+      toast.error('Error freezing user');
     }
   };
 
   const handleUnfreezeUser = async (userId) => {
     try {
       await unfreezeUser(userId);
+      toast.success('User unfrozen successfully');
       loadUsers();
       loadStats();
     } catch (error) {
       console.error("Error unfreezing user:", error);
-      alert("Error unfreezing user");
+      toast.error('Error unfreezing user');
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone!")) {
-      try {
-        await deleteUser(userId);
-        loadUsers();
-        loadStats();
-      } catch (error) {
-        console.error("Error deleting user:", error);
-        alert(error.response?.data?.message || "Error deleting user");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete User',
+      message: "Are you sure you want to delete this user? This action cannot be undone!",
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await deleteUser(userId);
+      toast.success('User deleted successfully');
+      loadUsers();
+      loadStats();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error(error.response?.data?.message || 'Error deleting user');
     }
   };
 
@@ -222,7 +247,7 @@ const AdminDashboard = () => {
   
   const confirmPromote = async () => {
     if (selectedRegions.length === 0) {
-      alert("Please select at least one region");
+      toast.warning('Please select at least one region');
       return;
     }
     
@@ -231,24 +256,33 @@ const AdminDashboard = () => {
       setShowPromoteModal(false);
       setUserToPromote(null);
       setSelectedRegions([]);
+      toast.success('User promoted to Map Ranger successfully');
       loadUsers();
       loadStats();
     } catch (error) {
       console.error("Error promoting user:", error);
-      alert("Error promoting user");
+      toast.error('Error promoting user');
     }
   };
 
   const handleDemoteUser = async (userId) => {
-    if (window.confirm("Are you sure you want to demote this user from Map Ranger?")) {
-      try {
-        await demoteFromMapRanger(userId);
-        loadUsers();
-        loadStats();
-      } catch (error) {
-        console.error("Error demoting user:", error);
-        alert("Error demoting user");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Demote User',
+      message: "Are you sure you want to demote this user from Map Ranger?",
+      confirmText: 'Demote',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await demoteFromMapRanger(userId);
+      toast.success('User demoted successfully');
+      loadUsers();
+      loadStats();
+    } catch (error) {
+      console.error("Error demoting user:", error);
+      toast.error('Error demoting user');
     }
   };
 
@@ -258,41 +292,65 @@ const AdminDashboard = () => {
       ? "Are you sure you want to make this point private?"
       : "Are you sure you want to make this point public?";
     
-    if (window.confirm(message)) {
-      try {
-        await axiosInstance.patch(`/admin/points/${pointId}/privacy`, { isPrivate: newPrivacy });
-        loadPoints();
-        loadStats();
-      } catch (error) {
-        console.error("Error toggling point privacy:", error);
-        alert("Error updating point privacy");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Toggle Privacy',
+      message: message,
+      confirmText: 'Confirm',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await axiosInstance.patch(`/admin/points/${pointId}/privacy`, { isPrivate: newPrivacy });
+      toast.success(`Point is now ${newPrivacy ? 'private' : 'public'}`);
+      loadPoints();
+      loadStats();
+    } catch (error) {
+      console.error("Error toggling point privacy:", error);
+      toast.error('Error updating point privacy');
     }
   };
 
   const handleDeletePoint = async (pointId) => {
-    if (window.confirm("Are you sure you want to delete this point? This action cannot be undone!")) {
-      try {
-        await deletePoint(pointId);
-        loadPoints();
-        loadStats();
-      } catch (error) {
-        console.error("Error deleting point:", error);
-        alert("Error deleting point");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Point',
+      message: "Are you sure you want to delete this point? This action cannot be undone!",
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await deletePoint(pointId);
+      toast.success('Point deleted successfully');
+      loadPoints();
+      loadStats();
+    } catch (error) {
+      console.error("Error deleting point:", error);
+      toast.error('Error deleting point');
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (window.confirm("Are you sure you want to delete this event? This action cannot be undone!")) {
-      try {
-        await deleteEvent(eventId);
-        loadEvents();
-        loadStats();
-      } catch (error) {
-        console.error("Error deleting event:", error);
-        alert("Error deleting event");
-      }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Event',
+      message: "Are you sure you want to delete this event? This action cannot be undone!",
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await deleteEvent(eventId);
+      toast.success('Event deleted successfully');
+      loadEvents();
+      loadStats();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error('Error deleting event');
     }
   };
 
@@ -317,6 +375,25 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <h1 className="admin-title">Admin Dashboard</h1>
 
       {/* Stats Cards */}

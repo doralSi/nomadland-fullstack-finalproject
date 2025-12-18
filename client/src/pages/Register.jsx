@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
+import { toast } from 'react-toastify';
 import './Auth.css';
 
 const Register = () => {
@@ -13,6 +14,8 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -49,9 +52,11 @@ const Register = () => {
     setLoading(false);
     
     if (result.success) {
+      toast.success('Registration successful! Welcome to NomadLand.');
       navigate('/');
     } else {
       setError(result.error);
+      toast.error(result.error || 'Registration failed');
     }
   };
 
@@ -64,9 +69,11 @@ const Register = () => {
     setLoading(false);
     
     if (result.success) {
+      toast.success('Google registration successful! Welcome to NomadLand.');
       navigate('/');
     } else {
       setError(result.error || 'Google login failed');
+      toast.error(result.error || 'Google registration failed');
     }
   };
 
@@ -110,15 +117,27 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Min 8 chars: Aa, 4 digits, 1 special (!@#$%^&*-_)"
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Min 8 chars: Aa, 4 digits, 1 special (!@#$%^&*-_)"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <span className="material-symbols-outlined">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
             <small className="password-hint">
               Must include: uppercase, lowercase, 4 digits, special character
             </small>
@@ -126,15 +145,27 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="Confirm your password"
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                <span className="material-symbols-outlined">
+                  {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary auth-submit-btn" disabled={loading}>

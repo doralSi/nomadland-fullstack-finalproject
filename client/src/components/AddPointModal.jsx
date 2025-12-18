@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { createPoint } from '../api/points';
 import { CATEGORIES } from '../constants/categories';
+import { toast } from 'react-toastify';
 import './AddPointModal.css';
 
-const AddPointModal = ({ location, onClose, onSuccess }) => {
+const AddPointModal = ({ location, regionSlug, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,13 +31,17 @@ const AddPointModal = ({ location, onClose, onSuccess }) => {
         ...formData,
         lat: location.lat,
         lng: location.lng,
+        regionSlug: regionSlug,
         language: 'en' // Default to English for now
       };
 
       await createPoint(pointData);
+      toast.success('Point created successfully!');
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create point');
+      const errorMsg = err.response?.data?.message || 'Failed to create point';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

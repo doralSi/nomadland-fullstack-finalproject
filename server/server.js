@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
+import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -15,19 +16,41 @@ import mapRangerRoutes from "./routes/mapRangerRoutes.js";
 import languageTestRoutes from "./routes/languageTestRoutes.js";
 import googleAuthRoutes from "./routes/googleAuthRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import testEmailRoutes from "./routes/testEmailRoutes.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Rate limiting
+// General rate limiter: 100 requests per 15 minutes
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Max 100 requests per windowMs
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes.' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Strict rate limiter for auth routes: 5 requests per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Max 5 requests per windowMs
+  message: { message: 'Too many authentication attempts from this IP, please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev')); // HTTP request logger
+app.use(generalLimiter); // Apply general rate limiting to all routes
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes); // Apply strict rate limiting to auth
 app.use("/api/auth/google", googleAuthRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/points", pointRoutes);
@@ -39,6 +62,7 @@ app.use("/api/personal-maps", personalMapRoutes);
 app.use("/api/map-ranger", mapRangerRoutes);
 app.use("/api/languages", languageTestRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/test-email", testEmailRoutes);
 
 console.log("✅ Auth routes registered at /api/auth");
 console.log("✅ Google auth routes registered at /api/auth/google");

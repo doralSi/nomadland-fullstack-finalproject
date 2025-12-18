@@ -3,6 +3,11 @@ import PropTypes from 'prop-types';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { useAuth } from '../context/AuthContext';
 import axios from '../api/axiosInstance';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import { toast } from 'react-toastify';
+import ConfirmDialog from './ConfirmDialog';
+import AlertDialog from './AlertDialog';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './EventDetailsModal.css';
@@ -23,6 +28,9 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
     user && event.rsvps?.some(rsvp => rsvp.user?._id === user.id || rsvp.user === user.id)
   );
   const [rsvpLoading, setRsvpLoading] = useState(false);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   if (!event) return null;
 
@@ -30,21 +38,34 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
   console.log('EventDetailsModal - region:', region);
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this event?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Event',
+      message: 'Are you sure you want to delete this event?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       setDeleting(true);
       await axios.delete(`/events/${event.templateId || event._id}`);
-      alert('Event deleted successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Event deleted successfully'
+      });
       if (onEventDeleted) {
         onEventDeleted();
       }
       onClose();
     } catch (err) {
       console.error('Error deleting event:', err);
-      alert(err.response?.data?.message || 'Failed to delete event');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to delete event'
+      });
       setDeleting(false);
     }
   };
@@ -55,7 +76,7 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
 
   const handleRSVP = async () => {
     if (!user) {
-      alert('Please login to RSVP');
+      toast.info('Please login to RSVP');
       return;
     }
 
@@ -67,14 +88,16 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
         await axios.delete(`/events/${templateId}/rsvp`);
         setRsvpCount(prev => prev - 1);
         setHasRSVPd(false);
+        toast.success('RSVP cancelled');
       } else {
         await axios.post(`/events/${templateId}/rsvp`);
         setRsvpCount(prev => prev + 1);
         setHasRSVPd(true);
+        toast.success("You're going!");
       }
     } catch (err) {
       console.error('RSVP error:', err);
-      alert(err.response?.data?.message || 'Failed to update RSVP');
+      toast.error(err.response?.data?.message || 'Failed to update RSVP');
     } finally {
       setRsvpLoading(false);
     }
@@ -124,6 +147,25 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
 
   return (
     <div className="modal-overlay" onClick={onClose}>
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <div className="event-details-modal" onClick={(e) => e.stopPropagation()}>
         {/* Close Button */}
         <button className="modal-close-btn-top" onClick={onClose}>
@@ -258,8 +300,8 @@ const EventDetailsModal = ({ event, onClose, onShowOnMap, region, onEventDeleted
                   scrollWheelZoom={false}
                 >
                   <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                   />
                   <Marker position={[event.location.lat, event.location.lng]} />
                 </MapContainer>

@@ -1,23 +1,45 @@
 import React, { useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from './ConfirmDialog';
+import AlertDialog from './AlertDialog';
 import './ReviewList.css';
 
 const ReviewList = ({ reviews, currentUserId, isAdmin, onReviewDeleted }) => {
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState('');
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   const handleDelete = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Review',
+      message: 'Are you sure you want to delete this review?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       setDeletingId(reviewId);
       setError('');
       await axiosInstance.delete(`/reviews/${reviewId}`);
       onReviewDeleted(reviewId);
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Review deleted successfully'
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete review');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to delete review'
+      });
     } finally {
       setDeletingId(null);
     }
@@ -59,6 +81,25 @@ const ReviewList = ({ reviews, currentUserId, isAdmin, onReviewDeleted }) => {
 
   return (
     <div className="review-list">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       {error && <div className="error-message">{error}</div>}
       
       {reviews.map((review) => {

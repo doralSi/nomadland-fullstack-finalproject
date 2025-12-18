@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
+import { toast } from 'react-toastify';
 import './ReviewForm.css';
 
 const ReviewForm = ({ pointId, onReviewAdded, onCancel, requiredLanguage = 'he' }) => {
@@ -35,6 +36,7 @@ const ReviewForm = ({ pointId, onReviewAdded, onCancel, requiredLanguage = 'he' 
     try {
       setLoading(true);
       const response = await axiosInstance.post(`/reviews/${pointId}`, formData);
+      toast.success('Review submitted successfully!');
       onReviewAdded(response.data);
       setFormData({
         text: '',
@@ -45,7 +47,9 @@ const ReviewForm = ({ pointId, onReviewAdded, onCancel, requiredLanguage = 'he' 
         language: requiredLanguage
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit review');
+      const errorMsg = err.response?.data?.message || 'Failed to submit review';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

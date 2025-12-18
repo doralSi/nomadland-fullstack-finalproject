@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
+import { toast } from 'react-toastify';
 import './Auth.css';
 
 const Login = () => {
@@ -11,6 +12,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -32,9 +34,11 @@ const Login = () => {
     setLoading(false);
     
     if (result.success) {
+      toast.success('Login successful! Welcome back.');
       navigate('/');
     } else {
       setError(result.error);
+      toast.error(result.error || 'Login failed');
     }
   };
 
@@ -47,14 +51,17 @@ const Login = () => {
     setLoading(false);
     
     if (result.success) {
+      toast.success('Google login successful! Welcome.');
       navigate('/');
     } else {
       setError(result.error || 'Google login failed');
+      toast.error(result.error || 'Google login failed');
     }
   };
 
   const handleGoogleError = () => {
     setError('Google login failed. Please try again.');
+    toast.error('Google login failed. Please try again.');
   };
 
   return (
@@ -80,20 +87,36 @@ const Login = () => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <span className="material-symbols-outlined">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary auth-submit-btn" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
+
+          <div className="auth-forgot-password">
+            <Link to="/forgot-password">Forgot your password?</Link>
+          </div>
         </form>
 
         <div className="auth-divider">

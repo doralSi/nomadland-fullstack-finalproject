@@ -15,6 +15,14 @@ const Footer = () => {
           </div>
           
           <div className="footer-section">
+            <h4>Contact</h4>
+            <p className="footer-contact">
+              <span className="material-symbols-outlined">mail</span>
+              <a href="mailto:nomadland@nml.com">nomadland@nml.com</a>
+            </p>
+          </div>
+          
+          <div className="footer-section">
             <h4>Legal</h4>
             <ul className="footer-links">
               <li><Link to="/privacy-policy">Privacy Policy</Link></li>

@@ -6,11 +6,28 @@ export const createPoint = async (req, res) => {
   try {
     const { title, description, category, lat, lng, images, language, isPrivate, regionSlug } = req.body;
 
+    console.log('📍 Creating point:', { title, regionSlug, lat, lng });
+
     // Validate required fields
     if (!title || lat === undefined || lng === undefined) {
       return res.status(400).json({ 
         message: 'Title, latitude, and longitude are required' 
       });
+    }
+
+    // Find region by slug if provided
+    let regionId = null;
+    if (regionSlug) {
+      const Region = (await import('../models/Region.js')).default;
+      const region = await Region.findOne({ slug: regionSlug });
+      if (region) {
+        regionId = region._id;
+        console.log('✅ Found region:', region.name, region._id);
+      } else {
+        console.log('❌ Region not found for slug:', regionSlug);
+      }
+    } else {
+      console.log('⚠️  No regionSlug provided in request');
     }
 
     const point = new Point({
@@ -23,6 +40,7 @@ export const createPoint = async (req, res) => {
       language: language || 'he',
       isPrivate: isPrivate || false,
       regionSlug: regionSlug || null,
+      region: regionId,
       createdBy: req.user.id
     });
 

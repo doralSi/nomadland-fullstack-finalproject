@@ -11,12 +11,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  align-items: start;
+  align-items: end;
 }
 
 .form-row.three-cols {
   grid-template-columns: 1fr 1fr 1fr;
-  align-items: start;
+  align-items: end;
 }
 
 /* Image Upload Section */

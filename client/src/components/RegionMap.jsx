@@ -10,6 +10,11 @@ import { getCategoryIcon, getCategoryLabel, createPointIcon } from '../utils/map
 import { MapBounds, MapClickHandler, MapInstanceCapture } from './map/MapHelpers';
 import PlaceSearchBar from './map/PlaceSearchBar';
 import { useFavorites } from '../hooks/useFavorites';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import { toast } from 'react-toastify';
+import ConfirmDialog from './ConfirmDialog';
+import AlertDialog from './AlertDialog';
 import '../utils/leafletConfig';
 import AddPointModal from './AddPointModal';
 import PointSidePanel from './PointSidePanel';
@@ -31,6 +36,9 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
   const [pointReviews, setPointReviews] = useState([]);
   const [searchMarker, setSearchMarker] = useState(null);
   const eventMarkerRef = useRef(null);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   // Use custom hook for favorites
   const { favoritePoints, setFavoritePoints, loadFavorites, isFavorite } = useFavorites(user);
@@ -158,9 +166,14 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Review',
+      message: 'Are you sure you want to delete this review?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/reviews/${reviewId}`, {
@@ -176,19 +189,32 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
           handleViewReviews(selectedPoint);
         }
         loadPoints(); // Refresh to get updated averages
+        await alertDialog.alert({
+          type: 'success',
+          title: 'Success',
+          message: 'Review deleted successfully'
+        });
       } else {
         const data = await response.json();
-        alert(data.message || 'Failed to delete review');
+        await alertDialog.alert({
+          type: 'error',
+          title: 'Error',
+          message: data.message || 'Failed to delete review'
+        });
       }
     } catch (err) {
       console.error('Failed to delete review:', err);
-      alert('Failed to delete review');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to delete review'
+      });
     }
   };
 
   const handleToggleFavorite = async (pointId) => {
     if (!user) {
-      alert('Please log in to add favorites');
+      toast.info('Please log in to add favorites');
       navigate('/login');
       return;
     }
@@ -198,13 +224,15 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
       if (isFavorite) {
         await removeFromFavorites(pointId);
         setFavoritePoints(prev => prev.filter(id => id !== pointId));
+        toast.success('Removed from favorites');
       } else {
         await addToFavorites(pointId);
         setFavoritePoints(prev => [...prev, pointId]);
+        toast.success('Added to favorites');
       }
     } catch (err) {
       console.error('Failed to toggle favorite:', err);
-      alert(err.response?.data?.message || 'Failed to update favorite');
+      toast.error(err.response?.data?.message || 'Failed to update favorite');
     }
   };
 
@@ -235,6 +263,25 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
 
   return (
     <div className="region-map-section">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <div className="region-map-header">
         <h2>Explore {region.name}</h2>
         
@@ -366,6 +413,7 @@ const RegionMap = ({ region, selectedCategories = [], eventToShow = null }) => {
       {showAddPointModal && selectedLocation && (
         <AddPointModal
           location={selectedLocation}
+          regionSlug={region.slug}
           onClose={handleCloseModal}
           onSuccess={handlePointCreated}
         />

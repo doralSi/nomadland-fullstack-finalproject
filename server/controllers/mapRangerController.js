@@ -305,7 +305,10 @@ export const getRegionStats = async (req, res) => {
     }
 
     // Count points in region - if admin, count all points including private ones
-    const pointsQuery = { regionSlug: regionSlug };
+    const pointsQuery = { 
+      region: region._id,
+      status: 'approved'
+    };
     if (req.user.role !== 'admin') {
       pointsQuery.isPrivate = false;
     }
@@ -318,7 +321,10 @@ export const getRegionStats = async (req, res) => {
 
     // Count reviews in region (reviews on points in this region)
     const Review = (await import('../models/Review.js')).default;
-    const pointsInRegion = await Point.find({ regionSlug: regionSlug }).select('_id');
+    const pointsInRegion = await Point.find({ 
+      region: region._id,
+      status: 'approved'
+    }).select('_id');
     const pointIds = pointsInRegion.map(p => p._id);
     const reviewsCount = await Review.countDocuments({ 
       point: { $in: pointIds } 
@@ -327,7 +333,7 @@ export const getRegionStats = async (req, res) => {
     // Count rangers for this region
     const rangersCount = await User.countDocuments({ 
       role: 'mapRanger',
-      managedRegions: regionSlug 
+      rangerRegions: regionSlug 
     });
 
     res.json({
@@ -339,5 +345,132 @@ export const getRegionStats = async (req, res) => {
   } catch (error) {
     console.error('Get region stats error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// ==================== GET POINTS AND EVENTS ====================
+
+// Get all points (with filtering) - for Map Rangers
+export const getPoints = async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 50, 
+      search = "", 
+      region = "",
+      category = "",
+      status = ""
+    } = req.query;
+
+    const query = {};
+    
+    if (search) {
+      query.title = { $regex: search, $options: "i" };
+    }
+    
+    if (category) {
+      query.category = category;
+    }
+    
+    // Handle privacy filter
+    if (status === "private") {
+      query.isPrivate = true;
+    } else if (status === "public") {
+      query.isPrivate = false;
+    }
+
+    // Filter by region - convert slug to ObjectId
+    if (region) {
+      const Region = (await import('../models/Region.js')).default;
+      const regionDoc = await Region.findOne({ slug: region });
+      if (regionDoc) {
+        query.region = regionDoc._id;
+      }
+    }
+
+    const total = await Point.countDocuments(query);
+    const points = await Point.find(query)
+      .populate("createdBy", "name email")
+      .populate("region", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .lean();
+
+    // Add region name and slug from populated field
+    const enrichedPoints = points.map(point => ({
+      ...point,
+      regionName: point.region?.name || "Unknown",
+      regionSlug: point.region?.slug || null
+    }));
+
+    res.json({
+      points: enrichedPoints,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error("Error getting points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all events (with filtering) - for Map Rangers
+export const getEvents = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      search = "",
+      region = "",
+      startDate = "",
+      endDate = ""
+    } = req.query;
+
+    const query = {};
+
+    if (search) {
+      query.title = { $regex: search, $options: "i" };
+    }
+
+    if (region) {
+      query.region = region;
+    }
+
+    if (startDate || endDate) {
+      query.startDate = {};
+      if (startDate) {
+        query.startDate.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        query.startDate.$lte = new Date(endDate);
+      }
+    }
+
+    const total = await EventTemplate.countDocuments(query);
+    const events = await EventTemplate.find(query)
+      .populate("createdBy", "name email")
+      .populate("region", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .lean();
+
+    const enrichedEvents = events.map(event => ({
+      ...event,
+      regionName: event.region?.name || "Unknown",
+      regionSlug: event.region?.slug || null
+    }));
+
+    res.json({
+      events: enrichedEvents,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error("Error getting events:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

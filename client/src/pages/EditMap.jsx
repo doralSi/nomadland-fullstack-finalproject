@@ -6,6 +6,10 @@ import 'leaflet/dist/leaflet.css';
 import axios from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { getCategoryIconSvg } from '../utils/categoryIcons.jsx';
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import './EditMap.css';
 
 // Create marker icon
@@ -49,6 +53,9 @@ const EditMap = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [mapCenter, setMapCenter] = useState([32.0853, 34.7818]);
   const [saving, setSaving] = useState(false);
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
 
   useEffect(() => {
     if (user && id) {
@@ -116,7 +123,11 @@ const EditMap = () => {
       setSelectedPoints((prev) => [...prev, point]);
     } catch (err) {
       console.error('Error adding point:', err);
-      alert(err.response?.data?.message || 'Failed to add point');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to add point'
+      });
     }
   };
 
@@ -126,7 +137,11 @@ const EditMap = () => {
       setSelectedPoints((prev) => prev.filter((p) => p._id !== pointId));
     } catch (err) {
       console.error('Error removing point:', err);
-      alert(err.response?.data?.message || 'Failed to remove point');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to remove point'
+      });
     }
   };
 
@@ -145,27 +160,48 @@ const EditMap = () => {
         description: newDescription || ''
       });
       setMap(response.data.map);
-      alert('Map updated successfully!');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Map updated successfully!'
+      });
     } catch (err) {
       console.error('Error updating map:', err);
-      alert(err.response?.data?.message || 'Failed to update map');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to update map'
+      });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteMap = async () => {
-    if (!window.confirm('Are you sure you want to delete this map? This action cannot be undone.')) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Map',
+      message: 'Are you sure you want to delete this map? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
 
     try {
       await axios.delete(`/personal-maps/${id}`);
-      alert('Map deleted successfully');
+      await alertDialog.alert({
+        type: 'success',
+        title: 'Success',
+        message: 'Map deleted successfully'
+      });
       navigate('/me/maps');
     } catch (err) {
       console.error('Error deleting map:', err);
-      alert(err.response?.data?.message || 'Failed to delete map');
+      await alertDialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to delete map'
+      });
     }
   };
 

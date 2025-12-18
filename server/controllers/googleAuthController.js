@@ -84,6 +84,7 @@ export const handleGoogleLogin = async (req, res) => {
         avatar: user.avatar,
         role: user.role,
         homeRegion: user.homeRegion,
+        rangerRegions: user.rangerRegions || [],
       },
     });
   } catch (error) {

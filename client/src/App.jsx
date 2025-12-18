@@ -9,6 +9,8 @@ import AccessibilityMenu from './components/AccessibilityMenu';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import About from './pages/About';
 import UserProfile from './pages/UserProfile';
@@ -29,6 +31,8 @@ import MapRangerPanel from './pages/MapRangerPanel';
 import EditPointLocation from './pages/EditPointLocation';
 import ManageUsers from './pages/ManageUsers';
 import AdminDashboard from './pages/AdminDashboard';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 function App() {
@@ -43,6 +47,8 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route
             path="/profile"
@@ -164,8 +170,20 @@ function App() {
         <Footer />
       </div>
       <AccessibilityMenu />
-    </Router>
-    </AccessibilityProvider>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      </Router>
+      </AccessibilityProvider>
   );
 }
 

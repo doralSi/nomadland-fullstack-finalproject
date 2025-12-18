@@ -8,14 +8,22 @@ import EventDetailsModal from "../components/EventDetailsModal";
 import PointsTable from "../components/admin/PointsTable";
 import EventsTable from "../components/admin/EventsTable";
 import Pagination from "../components/admin/Pagination";
-import { getAdminPoints, deletePoint, getAdminEvents, deleteEvent } from "../api/admin";
+import { getPoints, getEvents, deletePoint as deletePointByMapRanger, deleteEvent as deleteEventByMapRanger } from "../api/mapRanger";
 import { CATEGORIES } from "../constants/categories";
+import { useConfirm } from '../hooks/useConfirm';
+import { useAlert } from '../hooks/useAlert';
+import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AlertDialog from '../components/AlertDialog';
 import "../styles/AdminDashboard.css";
 
 const MapRangerPanel = () => {
   const { user } = useAuth();
   const { regions } = useRegion();
   const navigate = useNavigate();
+  
+  const confirmDialog = useConfirm();
+  const alertDialog = useAlert();
   
   // Selected region
   const [selectedRegion, setSelectedRegion] = useState("");
@@ -63,8 +71,8 @@ const MapRangerPanel = () => {
         if (regions.length > 0 && !selectedRegion) {
           setSelectedRegion(regions[0].slug);
         }
-      } else if (user.managedRegions) {
-        const userRegions = regions.filter(r => user.managedRegions.includes(r.slug));
+      } else if (user.rangerRegions && user.rangerRegions.length > 0) {
+        const userRegions = regions.filter(r => user.rangerRegions.includes(r.slug));
         setAvailableRegions(userRegions);
         if (userRegions.length > 0 && !selectedRegion) {
           setSelectedRegion(userRegions[0].slug);
@@ -114,7 +122,7 @@ const MapRangerPanel = () => {
   const loadPoints = async () => {
     setLoading(true);
     try {
-      const data = await getAdminPoints({
+      const data = await getPoints({
         page: pointsPage,
         search: pointsSearch,
         region: selectedRegion,
@@ -137,7 +145,7 @@ const MapRangerPanel = () => {
       const selectedRegionObj = regions.find(r => r.slug === selectedRegion);
       const regionId = selectedRegionObj ? selectedRegionObj._id : "";
       
-      const data = await getAdminEvents({
+      const data = await getEvents({
         page: eventsPage,
         search: eventsSearch,
         region: regionId,
@@ -173,41 +181,62 @@ const MapRangerPanel = () => {
   };
 
   const handleTogglePrivacy = async (pointId, isPrivate) => {
+    const confirmed = await confirmDialog.confirm({
+      title: 'Toggle Privacy',
+      message: `Are you sure you want to make this point ${isPrivate ? "public" : "private"}?`,
+      confirmText: 'Confirm',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
     try {
       await axiosInstance.patch(`/points/${pointId}/toggle-privacy`);
-      alert(`Point ${isPrivate ? "made public" : "made private"} successfully`);
+      toast.success(`Point ${isPrivate ? "made public" : "made private"} successfully`);
       loadPoints();
     } catch (error) {
       console.error("Error toggling privacy:", error);
-      alert(error.response?.data?.message || "Failed to update point");
+      toast.error(error.response?.data?.message || 'Failed to update point');
     }
   };
 
   const handleDeletePoint = async (pointId) => {
-    if (!window.confirm("Are you sure you want to delete this point?")) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Point',
+      message: "Are you sure you want to delete this point?",
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
     try {
-      await deletePoint(pointId);
-      alert("Point deleted successfully");
+      await deletePointByMapRanger(pointId);
+      toast.success('Point deleted successfully');
       loadPoints();
     } catch (error) {
       console.error("Error deleting point:", error);
-      alert(error.response?.data?.message || "Failed to delete point");
+      toast.error(error.response?.data?.message || 'Failed to delete point');
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) {
-      return;
-    }
+    const confirmed = await confirmDialog.confirm({
+      title: 'Delete Event',
+      message: "Are you sure you want to delete this event?",
+      confirmText: 'Delete',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
     try {
-      await deleteEvent(eventId);
-      alert("Event deleted successfully");
+      await deleteEventByMapRanger(eventId);
+      toast.success('Event deleted successfully');
       loadEvents();
     } catch (error) {
       console.error("Error deleting event:", error);
-      alert(error.response?.data?.message || "Failed to delete event");
+      toast.error(error.response?.data?.message || 'Failed to delete event');
     }
   };
 
@@ -217,6 +246,25 @@ const MapRangerPanel = () => {
 
   return (
     <div className="admin-dashboard">
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.handleClose}
+        onConfirm={confirmDialog.config.onConfirm}
+        message={confirmDialog.config.message}
+        title={confirmDialog.config.title}
+        confirmText={confirmDialog.config.confirmText}
+        cancelText={confirmDialog.config.cancelText}
+      />
+      
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={alertDialog.handleClose}
+        message={alertDialog.config.message}
+        title={alertDialog.config.title}
+        type={alertDialog.config.type}
+        confirmText={alertDialog.config.confirmText}
+      />
+      
       <div className="dashboard-header">
         <h1>Map Ranger Panel</h1>
         

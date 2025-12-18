@@ -27,6 +27,40 @@ body.dark-mode .footer {
   font-size: 1.5rem;
 }
 
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.footer-logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.footer-contact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.footer-contact .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.footer-contact a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-contact a:hover {
+  color: #667eea;
+}
+
 .footer-section h4 {
   color: white;
   margin-bottom: 0.75rem;
@@ -73,6 +107,14 @@ body.dark-mode .footer {
     grid-template-columns: 1fr;
     gap: 1rem;
     text-align: center;
+  }
+  
+  .footer-logo {
+    justify-content: center;
+  }
+
+  .footer-contact {
+    justify-content: center;
   }
   
   .footer-section {

@@ -1,0 +1,12 @@
+{
+  "name": "nomadland-fullstack-finalproject-root",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "echo 'No root dev script. Use npm run dev in client or server.'"
+  },
+  "description": "Root package.json for monorepo structure. Use client/ and server/ for actual apps."
+}

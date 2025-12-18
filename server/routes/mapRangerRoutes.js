@@ -14,7 +14,9 @@ import {
   getUsers,
   promoteToMapRanger,
   demoteToUser,
-  getRegionStats
+  getRegionStats,
+  getPoints,
+  getEvents
 } from '../controllers/mapRangerController.js';
 
 const router = express.Router();
@@ -24,6 +26,7 @@ router.use(authMiddleware);
 router.use(isMapRangerOrAdmin);
 
 // ==================== POINTS ROUTES ====================
+router.get('/points', getPoints);
 router.get('/pending/points', getPendingPoints);
 router.patch('/points/:id/approve', approvePoint);
 router.patch('/points/:id/reject', rejectPoint);
@@ -31,6 +34,7 @@ router.delete('/points/:id', deletePointByMapRanger);
 router.patch('/points/:id/location', updatePointLocation);
 
 // ==================== EVENTS ROUTES ====================
+router.get('/events', getEvents);
 router.get('/pending/events', getPendingEvents);
 router.patch('/events/:id/approve', approveEvent);
 router.patch('/events/:id/reject', rejectEvent);
